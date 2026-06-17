@@ -137,7 +137,7 @@ public static class TreeGenerator
                 float canopyOffsetZ = (offsetNoise2 * 2f - 1f) * MaxCanopyOffset;
 
                 // --- Plantar a arvore ---
-                PlantTree(chunkData, localX, surfaceY, localZ, trunkHeight, canopyRadius, canopyOffsetX, canopyOffsetZ);
+                PlantTree(chunkData, localX, surfaceY, localZ, trunkHeight, canopyRadius, canopyOffsetX, canopyOffsetZ, Mathf.RoundToInt(globalX), Mathf.RoundToInt(globalZ));
             }
         }
     }
@@ -161,12 +161,15 @@ public static class TreeGenerator
      * @param canopyRadius: Raio da esfera de folhagem.
      * @param canopyOffX  : Desvio horizontal da copa no eixo X.
      * @param canopyOffZ  : Desvio horizontal da copa no eixo Z.
+     * @param globalX     : Coordenada global X (usada para seeds deterministas).
+     * @param globalZ     : Coordenada global Z (usada para seeds deterministas).
      */
     private static void PlantTree(
         Block[,,] chunkData,
         int baseX, int surfaceY, int baseZ,
         int trunkHeight, float canopyRadius,
-        float canopyOffX, float canopyOffZ)
+        float canopyOffX, float canopyOffZ,
+        int globalX, int globalZ)
     {
         // 1. Colocar blocos de madeira no tronco (surfaceY+1 ate surfaceY+trunkHeight)
         for (int t = 1; t <= trunkHeight; t++)
@@ -220,6 +223,31 @@ public static class TreeGenerator
 
                     SetBlock(chunkData, bx, by, bz, Block.BlockType.LEAVES);
                 }
+            }
+        }
+
+        // 4. Chance de gerar uma colmeia (HIVE)
+        // Probabilidade muita rara (ex: 5%)
+        bool spawnHive = PseudoRandom(globalX, globalZ, 42) < 0.05f;
+        if (spawnHive && trunkHeight >= 4)
+        {
+            // Colocar num nivel baixo, logo abaixo das folhas
+            int hiveY = surfaceY + trunkHeight - 2; 
+            
+            // Escolher um lado aleatorio ao redor do tronco
+            int side = Mathf.FloorToInt(PseudoRandom(globalX, globalZ, 99) * 4f);
+            int hx = baseX;
+            int hz = baseZ;
+            
+            if (side == 0) hx += 1;
+            else if (side == 1) hx -= 1;
+            else if (side == 2) hz += 1;
+            else if (side == 3) hz -= 1;
+
+            // Apenas colocar se o bloco estiver vazio (nao substitui madeira nem terreno)
+            if (chunkData[hx, hiveY, hz].type == Block.BlockType.AIR)
+            {
+                SetBlock(chunkData, hx, hiveY, hz, Block.BlockType.HIVE);
             }
         }
     }

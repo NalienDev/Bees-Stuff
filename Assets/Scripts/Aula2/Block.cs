@@ -12,7 +12,7 @@ public class Block
     public enum CubeFace { Front, Back, Top, Bottom, Left, Right }
 
     /* Enumeracao dos tipos de bloco disponiveis, definindo a textura e dando confirmacao de existencia. */
-    public enum BlockType { GRASS, DIRT, STONE, COBBLESTONE, BEDROCK, WATER, AIR, WOOD, LEAVES }
+    public enum BlockType { GRASS, DIRT, STONE, COBBLESTONE, BEDROCK, WATER, AIR, WOOD, LEAVES, TALL_GRASS, FLOWER, HIVE }
 
     /* Tipo do bloco individual. */
     public BlockType type;
@@ -22,6 +22,8 @@ public class Block
     public bool isSolid;
     /* Define se o bloco e translucido (ex: folhas). Translucidos sao solidos visualmente mas nao ocluem faces vizinhas. */
     public bool isTranslucent;
+    /* Define se o bloco usa uma malha em cruz (duas faces cruzadas) para vegetacao, em vez de um cubo. */
+    public bool isCrossMesh;
 
     /* Os 8 vertices locais que compoem um cubo unitario centrado na origem [aula01]. */
     static readonly Vector3 v0 = new Vector3(-0.5f, -0.5f,  0.5f);
@@ -38,8 +40,11 @@ public class Block
     {
         this.type   = type;
         this.position = position;
-        isSolid      = (type != BlockType.AIR && type != BlockType.WATER);
-        isTranslucent = (type == BlockType.LEAVES);
+        
+        isCrossMesh = (type == BlockType.TALL_GRASS || type == BlockType.FLOWER);
+        // Cross meshes nao sao solidas (nao tem colisao nem participam no face culling)
+        isSolid = (type != BlockType.AIR && type != BlockType.WATER && !isCrossMesh);
+        isTranslucent = (type == BlockType.LEAVES || type == BlockType.HIVE); // Hive tem cantos transparentes? Vamos tratar como translucido pra garantir que nao corta coisas.
     }
 
     /**
@@ -75,6 +80,15 @@ public class Block
         }
         // Leaves: single tile
         else if (type == BlockType.LEAVES)      lbc = new Vector2(4f, 12f) / 16f;
+        else if (type == BlockType.TALL_GRASS)  lbc = new Vector2(7f, 13f) / 16f;
+        else if (type == BlockType.FLOWER)      lbc = new Vector2(12f, 15f) / 16f; // red flower
+        else if (type == BlockType.HIVE)
+        {
+            if (face == CubeFace.Top || face == CubeFace.Bottom)
+                lbc = new Vector2(5f, 14f) / 16f; // wood top for hive
+            else
+                lbc = new Vector2(11f, 8f) / 16f; // generic texture for hive (pumpkin face/crafting table front, etc. Pick 11,8 or similar)
+        }
         else                                    lbc = new Vector2(1f, 15f) / 16f; // fallback: stone
 
         Vector2 uv00 = lbc;
@@ -123,6 +137,59 @@ public class Block
         for (int i = 0; i < 6; i++)
         {
             triangles.Add(vertexIndex + tri[i]);
+        }
+    }
+
+    /**
+     * Adiciona a malha em cruz (duas faces intersetadas em X) para vegetacao.
+     * Nao sofre face culling e nao tem colisao.
+     */
+    public void AddCrossToMeshData(List<Vector3> vertices, List<int> triangles, List<Vector2> uvs)
+    {
+        int vertexIndex = vertices.Count;
+        Vector2[] uv = GetUVs(CubeFace.Front, type); // textura unica
+
+        // Definir os dois quads cruzados nas diagonais do cubo unitario
+        // Quad 1: (-0.5, -0.5, -0.5) a (0.5, 0.5, 0.5)
+        Vector3 q1v0 = new Vector3(-0.5f, -0.5f, -0.5f) + position;
+        Vector3 q1v1 = new Vector3( 0.5f, -0.5f,  0.5f) + position;
+        Vector3 q1v2 = new Vector3( 0.5f,  0.5f,  0.5f) + position;
+        Vector3 q1v3 = new Vector3(-0.5f,  0.5f, -0.5f) + position;
+
+        // Quad 2: (-0.5, -0.5, 0.5) a (0.5, 0.5, -0.5)
+        Vector3 q2v0 = new Vector3(-0.5f, -0.5f,  0.5f) + position;
+        Vector3 q2v1 = new Vector3( 0.5f, -0.5f, -0.5f) + position;
+        Vector3 q2v2 = new Vector3( 0.5f,  0.5f, -0.5f) + position;
+        Vector3 q2v3 = new Vector3(-0.5f,  0.5f,  0.5f) + position;
+
+        Vector3[] crossVertices = { 
+            q1v0, q1v1, q1v2, q1v3, // Frente quad 1
+            q1v1, q1v0, q1v3, q1v2, // Tras quad 1
+            q2v0, q2v1, q2v2, q2v3, // Frente quad 2
+            q2v1, q2v0, q2v3, q2v2  // Tras quad 2
+        };
+
+        Vector2[] crossUvs = {
+            uv[2], uv[3], uv[0], uv[1],
+            uv[2], uv[3], uv[0], uv[1],
+            uv[2], uv[3], uv[0], uv[1],
+            uv[2], uv[3], uv[0], uv[1]
+        };
+
+        int[] triTemplate = { 0, 2, 1, 0, 3, 2 };
+
+        for (int i = 0; i < 16; i++)
+        {
+            vertices.Add(crossVertices[i]);
+            uvs.Add(crossUvs[i]);
+        }
+
+        for (int q = 0; q < 4; q++)
+        {
+            for (int i = 0; i < 6; i++)
+            {
+                triangles.Add(vertexIndex + (q * 4) + triTemplate[i]);
+            }
         }
     }
 }

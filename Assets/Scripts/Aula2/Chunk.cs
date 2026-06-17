@@ -98,8 +98,9 @@ public class Chunk : MonoBehaviour
         GenerateWater();
         // 5. Atualizar terra exposta pela escavação
         UpdateExposedDirt();
-        // 6. Plantar árvores
+        // 6. Plantar árvores e vegetação
         TreeGenerator.PlantTrees(chunkData, worldOffset, seaLevel);
+        VegetationGenerator.PlantVegetation(chunkData, worldOffset, seaLevel);
     }
 
     /**
@@ -115,6 +116,7 @@ public class Chunk : MonoBehaviour
         GenerateWater();
         TextureCaveWalls(surfaceHeight);
         TreeGenerator.PlantTrees(chunkData, worldOffset, seaLevel);
+        VegetationGenerator.PlantVegetation(chunkData, worldOffset, seaLevel);
     }
 
     /**
@@ -354,12 +356,17 @@ public class Chunk : MonoBehaviour
         List<int> sharedTriangles = new List<int>();
         List<Vector2> sharedUvs = new List<Vector2>();
 
-        // 2. Para cada bloco sólido: adicionar faces visíveis
+        // 2. Para cada bloco sólido ou vegetação: adicionar faces visíveis
         for (int x = 0; x < chunkSize; x++)
             for (int y = 0; y < chunkHeight; y++)
                 for (int z = 0; z < chunkSize; z++)
                 {
                     Block block = chunkData[x, y, z];
+                    if (block.isCrossMesh) 
+                    {
+                        block.AddCrossToMeshData(sharedVertices, sharedTriangles, sharedUvs);
+                        continue;
+                    }
                     if (!block.isSolid) continue;
                     if (!IsOpaqueOrSameNeighbour(x, y, z + 1, block.type)) block.AddFaceToMeshData(Block.CubeFace.Front, sharedVertices, sharedTriangles, sharedUvs);
                     if (!IsOpaqueOrSameNeighbour(x, y, z - 1, block.type)) block.AddFaceToMeshData(Block.CubeFace.Back, sharedVertices, sharedTriangles, sharedUvs);
