@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: de0ab124680969f48bfd0194a89f9e25, type: 3}
+  m_Name: GuardaAgentConfig
+  m_EditorClassIdentifier: Assembly-CSharp::AgentConfig
+  contextPrompt: "Tu \xE9s um guarda no port\xE3o de um castelo medieval. Falas em
+    portugu\xEAs, de forma seca e desconfiada. N\xE3o confias em estranhos. Nunca
+    quebras a personagem."
+  answerGuideline: "Responde em 1-2 frases, nunca mais. Em portugu\xEAs europeu."
+  tools:
+  - name: OpenDoor
+    description: "Abre o port\xE3o. Usar s\xF3 com visitantes identificados ou com
+      nome conhecido."
+  - name: Shoot
+    description: "Dispara uma flecha de aviso. Usar se o visitante for amea\xE7ador
+      ou recusar identificar-se 3 vezes."
+  defaultErrorAnswer: "Desculpa, n\xE3o consegui responder."
