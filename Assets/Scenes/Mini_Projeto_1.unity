@@ -151,7 +151,11 @@ PrefabInstance:
     - target: {fileID: 1954118740897375695, guid: 247158d943868024b98b2b5c15da3668, type: 3}
       propertyPath: _texture
       value: 
-      objectReference: {fileID: 2800000, guid: 59fd9580e5f0f1f44a07e7766e5b2a51, type: 3}
+      objectReference: {fileID: 2800000, guid: 7d4cd8484313c044398b0cd3e56c96fa, type: 3}
+    - target: {fileID: 1954118740897375695, guid: 247158d943868024b98b2b5c15da3668, type: 3}
+      propertyPath: _topTexture
+      value: 
+      objectReference: {fileID: 2800000, guid: 2dbd9018605b1d6488a8f28b9a590ba2, type: 3}
     - target: {fileID: 2469310490887667699, guid: 247158d943868024b98b2b5c15da3668, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -1470,11 +1474,11 @@ PrefabInstance:
     - target: {fileID: 1954118740897375695, guid: 247158d943868024b98b2b5c15da3668, type: 3}
       propertyPath: _texture
       value: 
-      objectReference: {fileID: 2800000, guid: 7d4cd8484313c044398b0cd3e56c96fa, type: 3}
+      objectReference: {fileID: 2800000, guid: 59fd9580e5f0f1f44a07e7766e5b2a51, type: 3}
     - target: {fileID: 1954118740897375695, guid: 247158d943868024b98b2b5c15da3668, type: 3}
       propertyPath: _topTexture
       value: 
-      objectReference: {fileID: 2800000, guid: 2dbd9018605b1d6488a8f28b9a590ba2, type: 3}
+      objectReference: {fileID: 0}
     - target: {fileID: 2469310490887667699, guid: 247158d943868024b98b2b5c15da3668, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
