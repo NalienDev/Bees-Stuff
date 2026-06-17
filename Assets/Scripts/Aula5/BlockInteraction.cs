@@ -3,19 +3,19 @@ using UnityEngine;
 using static Config;
 
 /**
- * Classe que faz o tratamento de interaÁıes entre o jogador e o mundo (ex.: colocaÁ„o e destruiÁ„o de blocos).
+ * Classe que faz o tratamento de intera√ß√µes entre o jogador e o mundo (ex.: coloca√ß√£o e destrui√ß√£o de blocos).
  */
 public class BlockInteraction : MonoBehaviour
 {
-    [Tooltip("ReferÍncia a WorldManager. Necess·ria para aceder aos chunks j· carregados.")]
+    [Tooltip("Refer√™ncia a WorldManager. Necess√°ria para aceder aos chunks j√° carregados.")]
     public WorldManager worldManager;
-    [Tooltip("Dist‚ncia m·xima (em blocos) que o jogador consegue interagir.")]
+    [Tooltip("Dist√¢ncia m√°xima (em blocos) que o jogador consegue interagir.")]
     public float maxDistance = 6f;
     /* Componente que capta o input do jogador. */
     private StarterAssetsInputs _input;
-    [Tooltip("Tipo de bloco que o jogador poder· colocar no mundo.")]
+    [Tooltip("Tipo de bloco que o jogador poder√° colocar no mundo.")]
     public Block.BlockType placeType = Block.BlockType.DIRT;
-    [Tooltip("Highlight que indica o bloco para o qual o jogador est· a apontar.")]
+    [Tooltip("Highlight que indica o bloco para o qual o jogador est√° a apontar.")]
     public Transform highlightCube;
     private Block.BlockType[] palette = {
         Block.BlockType.DIRT,
@@ -30,7 +30,7 @@ public class BlockInteraction : MonoBehaviour
     }
 
     /**
-     * Ciclo principal que atualiza a posiÁ„o do cursor de interaÁ„o (highlightCube) e deteta os inputs de interaÁ„o.
+     * Ciclo principal que atualiza a posi√ß√£o do cursor de intera√ß√£o (highlightCube) e deteta os inputs de intera√ß√£o.
      */
     private void Update()
     {
@@ -85,9 +85,9 @@ public class BlockInteraction : MonoBehaviour
 
     /**
      * Modifica um bloco e atualiza as meshes relacionadas.
-     * NOTE: Garante tambÈm a atualizaÁ„o visual (redraw) dos chunks vizinhos se a alteraÁ„o ocorrer numa fronteira.
+     * NOTE: Garante tamb√©m a atualiza√ß√£o visual (redraw) dos chunks vizinhos se a altera√ß√£o ocorrer numa fronteira.
      * 
-     * @param worldPos: PosiÁ„o no mundo onde a alteraÁ„o deve ocorrer
+     * @param worldPos: Posi√ß√£o no mundo onde a altera√ß√£o deve ocorrer
      * @param type: O novo tipo de bloco a atribuir (...BlockType.AIR para destruir)
      */
     void ModifyBlock(Vector3 worldPos, Block.BlockType type)
@@ -129,6 +129,7 @@ public class BlockInteraction : MonoBehaviour
         block.isSolid = (type != Block.BlockType.AIR);
 
         chunk.DrawChunk();
+        chunk.BuildCollisionMesh();
         // Redesenhar vizinhos se na fronteira
         if (localX == 0) RedrawNeighbour(chunkCoord + Vector2Int.left);
         if (localX == cs - 1) RedrawNeighbour(chunkCoord + Vector2Int.right);
@@ -137,10 +138,10 @@ public class BlockInteraction : MonoBehaviour
     }
 
     /**
-     * Valida se a coordenada vertical est· dentro dos limites do mundo.
+     * Valida se a coordenada vertical est√° dentro dos limites do mundo.
      * 
      * @param y: A altura Y global a validar
-     * @return: True se for v·lida, False se ultrapassar os limites superior ou inferior
+     * @return: True se for v√°lida, False se ultrapassar os limites superior ou inferior
      */
     bool CheckBoundaries(int y)
     {
@@ -148,25 +149,25 @@ public class BlockInteraction : MonoBehaviour
     }
 
     /**
-     * Coloca um novo bloco na superfÌcie atingida pelo raycast.
+     * Coloca um novo bloco na superf√≠cie atingida pelo raycast.
      */
     void PlaceBlock()
     {
         Ray ray = new Ray(Camera.main.transform.position,
             Camera.main.transform.forward);
-        // ir para a frente meio bloco para obter a posiÁ„o correta deste (o hit.pos esta na superficie entre dois blocos)
+        // ir para a frente meio bloco para obter a posi√ß√£o correta deste (o hit.pos esta na superficie entre dois blocos)
         if (Physics.Raycast(ray, out RaycastHit hit, maxDistance))
             ModifyBlock(hit.point + hit.normal * 0.5f, placeType);
     }
 
     /**
-     * DestrÛi o bloco que foi atingido pelo raycast.
+     * Destr√≥i o bloco que foi atingido pelo raycast.
      */
     public void BreakBlock()
     {
         Ray ray = new Ray(Camera.main.transform.position,
             Camera.main.transform.forward);
-        // Recuar meio bloco para obter a posiÁ„o correta deste (o hit.pos esta na superficie entre dois blocos)
+        // Recuar meio bloco para obter a posi√ß√£o correta deste (o hit.pos esta na superficie entre dois blocos)
         if (Physics.Raycast(ray, out RaycastHit hit, maxDistance))
             ModifyBlock(hit.point - hit.normal * 0.5f, Block.BlockType.AIR);
     }
@@ -179,6 +180,11 @@ public class BlockInteraction : MonoBehaviour
     void RedrawNeighbour(Vector2Int coord)
     {
         Chunk c = worldManager.GetChunk(coord);
-        if (c != null) c.DrawChunk();
+        if (c != null) 
+        {
+            c.DrawChunk();
+            c.BuildCollisionMesh();
+        }
     }
 }
+
