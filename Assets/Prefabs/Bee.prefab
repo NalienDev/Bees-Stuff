@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 1969592613422251343}
   - component: {fileID: 3705240332909380230}
   - component: {fileID: 3050848877657859235}
+  - component: {fileID: 8473950991385507703}
   m_Layer: 0
   m_Name: Bee
   m_TagString: Untagged
@@ -62,7 +63,7 @@ CapsuleCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2
@@ -83,23 +84,22 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Unity.ML-Agents::Unity.MLAgents.Policies.BehaviorParameters
   m_BrainParameters:
-    VectorObservationSize: 15
+    VectorObservationSize: 17
     NumStackedVectorObservations: 1
     m_ActionSpec:
-      m_NumContinuousActions: 2
+      m_NumContinuousActions: 3
       BranchSizes: 02000000
     VectorActionSize: 
     VectorActionDescriptions: []
     VectorActionSpaceType: 1
     hasUpgradedBrainParametersWithActionSpec: 1
-  m_Model: {fileID: 5022602860645237092, guid: 2f91ff96ce0fc214294c97bb2343e7af, type: 3}
+  m_Model: {fileID: 0}
   m_InferenceDevice: 2
   m_BehaviorType: 0
   m_BehaviorName: BeeHoneyCollector
   TeamId: 0
   m_UseChildSensors: 1
   m_UseChildActuators: 1
-  m_DeterministicInference: 0
   m_ObservableAttributeHandling: 0
 --- !u!114 &1969592613422251343
 MonoBehaviour:
@@ -128,12 +128,18 @@ MonoBehaviour:
   loseMaterial: {fileID: 2100000, guid: ed2576b3fb5771a4da802086a287df2c, type: 2}
   moveSpeed: 4
   rotationSpeed: 3
+  terrainLayerMask:
+    serializedVersion: 2
+    m_Bits: 8
+  minHoverHeight: 0.5
+  maxFlightHeight: 5
+  groundSenseDistance: 40
   maxHunger: 45
   hungerRestoreAmount: 40
   hungerDecayMultiplier: 40
-  pollinationThreshold: 2
+  pollinationThreshold: 1
   interactionRadius: 1.3
-  hiveInteractionRadius: 1.2
+  hiveInteractionRadius: 1.3
   hunger: 0
 --- !u!114 &3705240332909380230
 MonoBehaviour:
@@ -148,7 +154,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Unity.ML-Agents::Unity.MLAgents.DecisionRequester
   DecisionPeriod: 5
-  DecisionStep: 0
   TakeActionsBetweenDecisions: 1
 --- !u!114 &3050848877657859235
 MonoBehaviour:
@@ -167,6 +172,7 @@ MonoBehaviour:
   - Wall
   - Hive
   - Flower
+  - Terrain
   m_RaysPerDirection: 7
   m_MaxRayDegrees: 180
   m_SphereCastRadius: 0.5
@@ -175,12 +181,37 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967291
   m_ObservationStacks: 1
-  m_AlternatingRayOrder: 1
-  m_UseBatchedRaycasts: 0
   rayHitColor: {r: 1, g: 0, b: 0, a: 1}
   rayMissColor: {r: 1, g: 1, b: 1, a: 1}
   m_StartVerticalOffset: 0
   m_EndVerticalOffset: 0
+--- !u!54 &8473950991385507703
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 499308193751162746}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 0
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 1
 --- !u!1 &665227048796345977
 GameObject:
   m_ObjectHideFlags: 0

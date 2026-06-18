@@ -5,30 +5,19 @@ using Unity.MLAgents.Actuators;
 using System.Collections.Generic;
 using UnityEngine.UI;
 
-/**
- * Agente de Reinforcement Learning que simula uma abelha.
- * Responsável por navegar no ambiente, recolher pólen das flores, 
- * depositar na colmeia e gerir o seu próprio nível de fome.
- */
 public class BeeAgent : Agent
 {
     [Header("Referencias da Cena")]
-    /** Gestor global da colmeia. */
     public HiveManager hiveManager;
-    /** Referência espacial para a colmeia. */
     public Transform hiveTransform;
-    /** Referência do chão para alterar o feedback visual. */
     public MeshRenderer floorRenderer;
-    /** Modelo visual específico da abelha para aplicar rotações independentes da raiz. */
     public Transform beeModel;
 
     [Header("UI")]
-    /** Barra de progresso visual para a fome da abelha. */
     public Slider hungerSlider;
-    /** Define se a interface visual deve rodar para acompanhar a câmara. */
     public bool billboardUI = true;
 
-    [Header("Feedback Visual")] 
+    [Header("Feedback Visual")]
     public Material defaultMaterial;
     public Material winMaterial;
     public Material loseMaterial;
@@ -37,20 +26,24 @@ public class BeeAgent : Agent
     public float moveSpeed = 5f;
     public float rotationSpeed = 1f;
 
+    [Header("Parametros de Voo")]
+    /** Camadas consideradas "terreno" para efeitos de altura e colisão. */
+    public LayerMask terrainLayerMask;
+    /** Altura mínima que a abelha mantém acima do terreno por baixo de si. */
+    public float minHoverHeight = 0.5f;
+    /** Altura máxima permitida acima do terreno por baixo de si. */
+    public float maxFlightHeight = 12f;
+    /** Distância máxima usada para "sentir" o solo/teto por raycast. */
+    public float groundSenseDistance = 40f;
+
     [Header("Parametros de Fome")]
-    /** Nível máximo de fome suportado pela abelha. */
     public float maxHunger = 100f;
-    /** Quantidade de fome restaurada ao consumir mel na colmeia. */
     public float hungerRestoreAmount = 40f;
-    /** Multiplicador da taxa de decaimento da fome. */
     public float hungerDecayMultiplier = 5f;
 
     [Header("Parametros de Polinizacao")]
-    /** Tempo necessário (em segundos) a interagir com uma flor para recolher pólen. */
     public float pollinationThreshold = 1.0f;
-    /** Raio máximo para conseguir interagir com uma flor. */
     public float interactionRadius = 1.2f;
-    /** Raio máximo para conseguir interagir com a colmeia. */
     public float hiveInteractionRadius = 0.8f;
 
     [Header("Estado Atual")]
@@ -60,29 +53,32 @@ public class BeeAgent : Agent
     private float pollinationTimer = 0f;
     private bool finished = false;
 
-    /** Referência temporária para a flor alvo mais próxima. */
     private FlowerController nearestFlower;
+    private Rigidbody rb;
 
-    /**
-     * Regista a abelha no gestor da colmeia e inicializa o modelo visual.
-     */
     public override void Initialize()
     {
         if (hiveManager != null)
             hiveManager.RegisterBee(this);
         if (beeModel == null) beeModel = transform;
+
+        rb = GetComponent<Rigidbody>();
+        if (rb == null)
+        {
+            Debug.LogWarning($"{gameObject.name}: BeeAgent precisa de um Rigidbody para voar com colisão de terreno.");
+        }
+        else
+        {
+            rb.useGravity = false;
+            rb.constraints = RigidbodyConstraints.FreezeRotation;
+        }
     }
 
-    /**
-     * Atualiza a interface gráfica do utilizador a cada frame.
-     * Sincroniza a barra de fome e aplica o efeito de billboard caso ativado.
-     */
     private void Update()
     {
         if (hungerSlider != null)
         {
             hungerSlider.value = hunger;
-
             if (billboardUI && Camera.main != null)
             {
                 hungerSlider.transform.parent.rotation = Camera.main.transform.rotation;
@@ -90,10 +86,6 @@ public class BeeAgent : Agent
         }
     }
 
-    /**
-     * Prepara o agente para um novo episódio.
-     * Repõe o estado da fome, inventário, contadores de tempo e reposiciona o agente.
-     */
     public override void OnEpisodeBegin()
     {
         hungerDecayRate = (float)Academy.Instance.EnvironmentParameters
@@ -105,16 +97,23 @@ public class BeeAgent : Agent
         hunger = maxHunger;
 
         if (hiveManager != null)
-        {
             hiveManager.NotifyBeeReset(this);
-        }
 
         ReleaseCurrentFlower();
         nearestFlower = null;
 
         if (hiveTransform != null)
         {
-            transform.position = hiveTransform.position;
+            if (rb != null)
+            {
+                rb.position = hiveTransform.position;
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+            else
+            {
+                transform.position = hiveTransform.position;
+            }
         }
 
         if (floorRenderer != null)
@@ -129,17 +128,12 @@ public class BeeAgent : Agent
         UpdateNearestFlower();
     }
 
-    /**
-     * Recolhe as observações do ambiente para alimentar a rede neuronal.
-     * Transmite estados internos, estado da colmeia e vetores espaciais relativos (flor e colmeia).
-     * * @param sensor: Sensor utilizado para empilhar observações vetoriais contínuas.
-     */
     public override void CollectObservations(VectorSensor sensor)
     {
         sensor.AddObservation(finished ? 1f : 0f); // 1
         sensor.AddObservation(hunger / maxHunger);  // 1
         sensor.AddObservation(hasPollen ? 1f : 0f); // 1
-        
+
         float honeyRatio = 0f;
         if (hiveManager != null)
             honeyRatio = Mathf.Clamp01(hiveManager.HoneyStored / 5f);
@@ -159,22 +153,20 @@ public class BeeAgent : Agent
             sensor.AddObservation(0f);           // 1
             sensor.AddObservation(0f);           // 1
         }
-        
+
         sensor.AddObservation(hasPollen ? 1f : 0f); // 1
 
         Vector3 dirHive = (hiveTransform.position - transform.position).normalized;
         float distHive = Vector3.Distance(hiveTransform.position, transform.position) / 20f;
-        sensor.AddObservation(dirHive);                  // 3
-        sensor.AddObservation(distHive);                 // 1
+        sensor.AddObservation(dirHive);   // 3
+        sensor.AddObservation(distHive);  // 1
         sensor.AddObservation(pollinationTimer / pollinationThreshold); // 1
-        // Total: 16
+
+        sensor.AddObservation(GetGroundClearance());  // 1
+        sensor.AddObservation(GetCeilingClearance()); // 1
+        // Total: 17
     }
 
-    /**
-     * Processa as ações tomadas pelo agente (via rede neuronal ou input manual), movendo o objeto,
-     * rodando o modelo e lidando com o sistema de recolha e entrega de recursos/alimento.
-     * * @param actions: Buffers contendo as decisões contínuas e discretas.
-     */
     public override void OnActionReceived(ActionBuffers actions)
     {
         if (finished) return;
@@ -190,22 +182,26 @@ public class BeeAgent : Agent
         }
 
         if (!hasPollen)
-        {
             UpdateNearestFlower();
-        }
 
         AddReward(-1f / MaxStep);
 
         float moveX = Mathf.Clamp(actions.ContinuousActions[0], -1f, 1f);
-        float moveZ = Mathf.Clamp(actions.ContinuousActions[1], -1f, 1f);
-        Vector3 moveDir = new Vector3(moveX, 0f, moveZ);
-        
-        transform.localPosition += moveDir * Time.deltaTime * moveSpeed;
+        float moveY = Mathf.Clamp(actions.ContinuousActions[1], -1f, 1f);
+        float moveZ = Mathf.Clamp(actions.ContinuousActions[2], -1f, 1f);
+        Vector3 moveDir = new Vector3(moveX, moveY, moveZ);
 
-        // Rodar o modelo ao invés da raíz
-        if (moveDir.sqrMagnitude > 0.001f && beeModel != null)
+        Vector3 currentPos = rb != null ? rb.position : transform.position;
+        Vector3 targetPos = ClampAltitude(currentPos + moveDir * Time.deltaTime * moveSpeed);
+
+        if (rb != null) rb.MovePosition(targetPos);
+        else transform.position = targetPos;
+
+        // Rodar o modelo (apenas yaw) com base no movimento horizontal
+        Vector3 horizontalDir = new Vector3(moveX, 0f, moveZ);
+        if (horizontalDir.sqrMagnitude > 0.001f && beeModel != null)
         {
-            Quaternion targetRotation = Quaternion.LookRotation(moveDir);
+            Quaternion targetRotation = Quaternion.LookRotation(horizontalDir);
             beeModel.rotation = Quaternion.Slerp(beeModel.rotation, targetRotation, Time.deltaTime * rotationSpeed);
         }
 
@@ -231,7 +227,7 @@ public class BeeAgent : Agent
                                 AddReward(+0.3f);
                                 pollinationTimer = 0f;
                                 ReleaseCurrentFlower();
-                                nearestFlower = null; 
+                                nearestFlower = null;
                             }
                         }
                     }
@@ -248,9 +244,7 @@ public class BeeAgent : Agent
         }
 
         if (!isNearFlower)
-        {
             pollinationTimer = 0f;
-        }
 
         if (interact == 1)
         {
@@ -264,29 +258,21 @@ public class BeeAgent : Agent
                     AddReward(+1f);
                     if (floorRenderer != null) floorRenderer.material = winMaterial;
                 }
-                else
+                else if (hunger <= maxHunger * 0.6f)
                 {
-                    if (hunger <= maxHunger * 0.6f)
+                    float eaten = hiveManager.ConsumeHoney(hungerRestoreAmount);
+                    if (eaten > 0f)
                     {
-                        float eaten = hiveManager.ConsumeHoney(hungerRestoreAmount);
-                        if (eaten > 0f)
-                        {
-                            float oldHunger = hunger;
-                            hunger = Mathf.Min(maxHunger, hunger + eaten);
-                            AddReward(+0.3f);
-                            Debug.Log($"{gameObject.name}: I ate honey! Hunger: {oldHunger:F1} -> {hunger:F1}");
-                        }
+                        float oldHunger = hunger;
+                        hunger = Mathf.Min(maxHunger, hunger + eaten);
+                        AddReward(+0.3f);
+                        Debug.Log($"{gameObject.name}: I ate honey! Hunger: {oldHunger:F1} -> {hunger:F1}");
                     }
                 }
             }
         }
     }
 
-    /**
-     * Processa as interações com colisores definidos como 'Trigger'.
-     * Aplica uma penalidade caso a abelha colida com as paredes e termina o seu percurso.
-     * * @param other: Colisor com o qual o agente colidiu.
-     */
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Wall"))
@@ -298,27 +284,50 @@ public class BeeAgent : Agent
         }
     }
 
-    /**
-     * Define o controlo manual da abelha para permitir testes heurísticos.
-     * * @param actionsOut: Buffer de ações a ser populado com dados oriundos dos inputs do teclado.
-     */
     public override void Heuristic(in ActionBuffers actionsOut)
     {
         var ca = actionsOut.ContinuousActions;
         ca[0] = Input.GetAxis("Horizontal");
-        ca[1] = Input.GetAxis("Vertical");
+        ca[1] = (Input.GetKey(KeyCode.E) ? 1f : 0f) - (Input.GetKey(KeyCode.Q) ? 1f : 0f); // subir/descer
+        ca[2] = Input.GetAxis("Vertical");
 
         var da = actionsOut.DiscreteActions;
         da[0] = Input.GetKey(KeyCode.Space) ? 1 : 0;
     }
 
     /**
-     * Identifica e reserva a flor carregada e não-reservada mais próxima do agente.
-     * Liberta reservas anteriores caso encontre um alvo mais adequado ou não necessite de procurar.
+     * Mantém a posição alvo dentro de uma faixa de altura segura relativa ao terreno
+     * imediatamente abaixo. Se não houver terreno detetável (ex: sobre um abismo), 
+     * a altura não é alterada nesse frame.
      */
+    private Vector3 ClampAltitude(Vector3 worldPos)
+    {
+        Vector3 rayOrigin = new Vector3(worldPos.x, worldPos.y + groundSenseDistance, worldPos.z);
+        if (Physics.Raycast(rayOrigin, Vector3.down, out RaycastHit hit, groundSenseDistance * 2f, terrainLayerMask))
+        {
+            float groundY = hit.point.y;
+            worldPos.y = Mathf.Clamp(worldPos.y, groundY + minHoverHeight, groundY + maxFlightHeight);
+        }
+        return worldPos;
+    }
+
+    private float GetGroundClearance()
+    {
+        if (Physics.Raycast(transform.position, Vector3.down, out RaycastHit hit, groundSenseDistance, terrainLayerMask))
+            return Mathf.Clamp01(hit.distance / groundSenseDistance);
+        return 1f;
+    }
+
+    private float GetCeilingClearance()
+    {
+        if (Physics.Raycast(transform.position, Vector3.up, out RaycastHit hit, groundSenseDistance, terrainLayerMask))
+            return Mathf.Clamp01(hit.distance / groundSenseDistance);
+        return 1f;
+    }
+
     private void UpdateNearestFlower()
     {
-        if (hiveManager == null || hasPollen) 
+        if (hiveManager == null || hasPollen)
         {
             ReleaseCurrentFlower();
             nearestFlower = null;
@@ -342,14 +351,13 @@ public class BeeAgent : Agent
             }
         }
 
-        bool currentStillValid = nearestFlower != null && 
-                                nearestFlower.IsCharged && 
+        bool currentStillValid = nearestFlower != null &&
+                                nearestFlower.IsCharged &&
                                 (nearestFlower.ReservedBy == null || nearestFlower.ReservedBy == this);
 
         if (bestFlower != null)
         {
             float currentDist = (nearestFlower != null) ? Vector3.Distance(transform.position, nearestFlower.transform.position) : Mathf.Infinity;
-            
             if (!currentStillValid || bestDist < currentDist - 0.5f)
             {
                 ReleaseCurrentFlower();
@@ -364,15 +372,9 @@ public class BeeAgent : Agent
         }
     }
 
-    /**
-     * Liberta a reserva lógica sobre a flor atual, 
-     * tornando-a disponível para outros agentes da colmeia.
-     */
     private void ReleaseCurrentFlower()
     {
         if (nearestFlower != null && nearestFlower.ReservedBy == this)
-        {
             nearestFlower.ReservedBy = null;
-        }
     }
 }

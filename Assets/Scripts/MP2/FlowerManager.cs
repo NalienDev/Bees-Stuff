@@ -1,61 +1,61 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-/**
- * Gere a instanciação e distribuição espacial das flores na arena.
- * Coordena-se com o HiveManager para garantir que as flores surgem em locais válidos.
- */
 public class FlowerManager : MonoBehaviour
 {
-    /** Prefab utilizado para instanciar novas flores. */
     public GameObject flowerPrefab;
-    /** Número de flores a instanciar em cada quadrante válido. */
     public int flowersPerQuarter = 3;
-
-    /** Referência ao gestor global para registar as flores geradas. */
     public HiveManager hiveManager;
+
+    [Header("Terreno")]
+    public LayerMask terrainLayerMask;
+    public float maxTerrainHeight = 50f;
+    public float flowerHeightOffset = 0.25f;
+    public int maxSpawnAttempts = 10;
+
     private List<GameObject> spawnedFlowers = new List<GameObject>();
 
-    /**
-     * Destrói as flores existentes e instancia um novo conjunto baseado numa lista de áreas.
-     * Regista posteriormente o novo conjunto no HiveManager.
-     * * @param quarters: Lista de áreas retangulares (quadrantes) onde as flores podem ser instanciadas.
-     */
     public void SpawnFlowers(List<Rect> quarters)
     {
-        // Limpa flores antigas
         foreach (var flower in spawnedFlowers)
         {
             if (flower != null) Destroy(flower);
         }
         spawnedFlowers.Clear();
 
-        // Instancia novas flores em cada quadrante
         foreach (var rect in quarters)
         {
             for (int i = 0; i < flowersPerQuarter; i++)
             {
-                Vector3 spawnPos = new Vector3(
-                    Random.Range(rect.xMin, rect.xMax),
-                    0.25f,
-                    Random.Range(rect.yMin, rect.yMax)
-                );
-
+                Vector3 spawnPos = GetGroundedPosition(rect, flowerHeightOffset);
                 GameObject flower = Instantiate(flowerPrefab, transform);
-                flower.transform.localPosition = spawnPos;
+                flower.transform.position = spawnPos; // posição em mundo, já não local
                 spawnedFlowers.Add(flower);
             }
         }
 
-        // Ordena ao HiveManager para utilizar estas flores
         if (hiveManager != null)
         {
             List<FlowerController> flowerControllers = new List<FlowerController>();
             foreach (var f in spawnedFlowers)
-            {
                 flowerControllers.Add(f.GetComponent<FlowerController>());
-            }
             hiveManager.SetFlowers(flowerControllers);
         }
+    }
+
+    private Vector3 GetGroundedPosition(Rect rect, float heightOffset)
+    {
+        for (int attempt = 0; attempt < maxSpawnAttempts; attempt++)
+        {
+            float x = Random.Range(rect.xMin, rect.xMax);
+            float z = Random.Range(rect.yMin, rect.yMax);
+            Vector3 rayOrigin = new Vector3(x, maxTerrainHeight, z);
+
+            if (Physics.Raycast(rayOrigin, Vector3.down, out RaycastHit hit, maxTerrainHeight * 2f, terrainLayerMask))
+                return hit.point + Vector3.up * heightOffset;
+        }
+
+        Debug.LogWarning("FlowerManager: terreno não encontrado, a usar fallback.");
+        return new Vector3(rect.center.x, heightOffset, rect.center.y);
     }
 }
