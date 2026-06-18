@@ -39,6 +39,17 @@ public class WorldManager : MonoBehaviour
     void Awake()
     {
         mainCamera = Camera.main;
+        // Inicializa o Atlas usando as imagens individuais da pasta Resources
+        if (chunkMaterial != null)
+        {
+            Block.InitializeAtlas(chunkMaterial.shader);
+            // Substitui o material base pelo material gerado dinamicamente com o novo atlas
+            chunkMaterial = Block.AtlasMaterial;
+        }
+        else
+        {
+            Debug.LogError("Atribui o chunkMaterial no Inspector para podermos extrair o Shader!");
+        }
     }
 
     // Update — detectar mudança de chunk do jogador

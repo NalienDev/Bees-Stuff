@@ -58,7 +58,7 @@ public static class VegetationGenerator
                 }
                 else if (rand < grassProb + flowerProb)
                 {
-                    chunkData[x, surfaceY + 1, z] = new Block(Block.BlockType.TALL_GRASS, new Vector3(x, surfaceY + 1, z));
+                    chunkData[x, surfaceY + 1, z] = new Block(Block.BlockType.SHORT_GRASS, new Vector3(x, surfaceY + 1, z));
                 }
             }
         }
