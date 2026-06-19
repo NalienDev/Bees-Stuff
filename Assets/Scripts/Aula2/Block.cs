@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 /**
@@ -56,11 +56,11 @@ public class Block
     /**
      * Inicializa o Atlas de Texturas em Tempo de Execucao.
      * Carrega as imagens individuais das pastas Resources/Blocks/ e Resources/TransparentBlocks/
-     * e agrupa-as numa �nica textura (Atlas) para manter a otimizacao de 1 draw call.
+     * e agrupa-as numa única textura (Atlas) para manter a otimizacao de 1 draw call.
      *
      * @param voxelShader: O Shader que sera utilizado para criar o material do Atlas.
      */
-    public static void InitializeAtlas(Shader voxelShader)
+    public static void InitializeAtlas(Material baseMaterial)
     {
         if (textureUVs.Count > 0) return; // Ja inicializado
 
@@ -89,7 +89,6 @@ public class Block
         loadTex("bedrock", false);
         loadTex("water", false);
         loadTex("grass_top", false);
-        loadTex("grass_bottom", false);
         loadTex("grass_side", false);
         loadTex("wood_top", false);
         loadTex("wood_side", false);
@@ -115,8 +114,9 @@ public class Block
         }
 
         // Criar o material unico que os seus Chunks vao partilhar
-        AtlasMaterial = new Material(voxelShader);
+        AtlasMaterial = new Material(baseMaterial);
         AtlasMaterial.mainTexture = runtimeAtlas;
+        AtlasMaterial.color = Color.white;
     }
 
     /**
@@ -128,7 +128,7 @@ public class Block
         {
             case BlockType.GRASS:
                 if (face == CubeFace.Top) return "grass_top";
-                if (face == CubeFace.Bottom) return "grass_bottom";
+                if (face == CubeFace.Bottom) return "dirt";
                 return "grass_side";
             case BlockType.WOOD:
                 if (face == CubeFace.Top || face == CubeFace.Bottom) return "wood_top";
@@ -267,3 +267,4 @@ public class Block
         }
     }
 }
+
