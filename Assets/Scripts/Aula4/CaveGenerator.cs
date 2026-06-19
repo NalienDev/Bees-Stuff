@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 /**
  * Classe estática responsável pela escavação de grutas e túneis no mundo.
@@ -58,7 +58,8 @@ public static class CaveGenerator
     {
         for (int i = 0; i < wormsPerChunk; i++)
         {
-            System.Random rng = new System.Random(); // Necessário pois estamos a usar isto em uma thread e o unity é single threaded, então nada da unity api pode ser chamada em threads
+            // Para a geração procedural ter continuidade entre chunks com seeds diferentes
+            System.Random rng = new System.Random(Config.seedOffsetHash + worldOffset.x * 1234 + worldOffset.y * 5678);
 
             // ponto de início aleatório dentro do chunk em coordenadas globais
             float globalStartX = worldOffset.x * chunkSize + (float)(rng.NextDouble() * chunkSize);

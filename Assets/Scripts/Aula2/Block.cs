@@ -117,7 +117,7 @@ public class Block
         AtlasMaterial = new Material(baseMaterial);
         AtlasMaterial.mainTexture = runtimeAtlas;
         AtlasMaterial.color = Color.white;
-        AtlasMaterial.SetInt("_Cull", 0);
+        
     }
 
     /**
@@ -283,6 +283,7 @@ public class Block
         }
     }
 }
+
 
 
 

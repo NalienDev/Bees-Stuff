@@ -90,8 +90,8 @@ public static class TreeGenerator
                 if (localX >= chunkSize - EdgeMargin) localX = chunkSize - EdgeMargin - 1;
                 if (localZ >= chunkSize - EdgeMargin) localZ = chunkSize - EdgeMargin - 1;
 
-                float globalX = worldOffset.x * chunkSize + localX;
-                float globalZ = worldOffset.y * chunkSize + localZ;
+                float globalX = worldOffset.x * chunkSize + localX + Config.seedOffsetX;
+                float globalZ = worldOffset.y * chunkSize + localZ + Config.seedOffsetZ;
 
                 // --- Condicao 3: mapa de ruido de spawn ---
                 float spawnNoise = Mathf.PerlinNoise(

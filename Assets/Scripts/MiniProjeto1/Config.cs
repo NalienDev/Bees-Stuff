@@ -2,17 +2,24 @@ using UnityEngine;
 
 public static class Config
 {
-    [Header("Dimensıes do Chunk")]
-    /* Tamanho do chunk nos eixos X e Z ó define a largura e profundidade em blocos */
+    [Header("Dimens√µes do Chunk")]
+    /* Tamanho do chunk nos eixos X e Z ‚Äî define a largura e profundidade em blocos */
     public static readonly int chunkSize = 16;
-    /* Tamanho do chunk no eixo Y ó define a altura m·xima em blocos */
+    /* Tamanho do chunk no eixo Y ‚Äî define a altura m√°xima em blocos */
     public static readonly int chunkHeight = 64;
 
-    [Header("ConfiguraÁıes do Mundo")]
+    [Header("Configura√ß√µes do Mundo")]
     public static readonly int renderDistance = 3;
-    /* Altura m·xima do mundo */
+    /* Altura m√°xima do mundo */
     public static readonly int worldHeight = 256;
 
-    [Header("GeraÁ„o de Terreno")]
+    [Header("Gera√ß√£o de Terreno")]
     public static readonly int seaLevel = 12;
+
+    [Header("Seed Settings")]
+    /* Offsets globais usados para deslocar as coordenadas de ru√≠do, atuando como uma seed para a gera√ß√£o */
+    public static float seedOffsetX = 0f;
+    public static float seedOffsetZ = 0f;
+    /* Hash inteiro usado para inicializar geradores de n√∫meros pseudo-aleat√≥rios como o System.Random */
+    public static int seedOffsetHash = 0;
 }
