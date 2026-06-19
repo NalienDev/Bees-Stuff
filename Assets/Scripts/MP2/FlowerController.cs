@@ -25,7 +25,7 @@ public class FlowerController : MonoBehaviour
     /** Indica se a flor possui pólen disponível para colheita. */
     public bool IsCharged => isCharged;
     /** Regista a abelha que tenciona colher esta flor, prevenindo a concorrência. */
-    public BeeAgent ReservedBy { get; set; }
+    public MonoBehaviour ReservedBy { get; set; }
 
     /**
      * Atualiza o temporizador de recarga a cada frame.

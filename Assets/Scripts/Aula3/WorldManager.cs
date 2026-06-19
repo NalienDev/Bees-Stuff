@@ -143,6 +143,9 @@ public class WorldManager : MonoBehaviour
 
         foreach (var key in toDestroy)
         {
+            if (WorldBeeManager.Instance != null)
+                WorldBeeManager.Instance.OnChunkRemoved(key);
+
             Destroy(sleepingChunks[key]);
             sleepingChunks.Remove(key);
         }
@@ -276,6 +279,9 @@ public class WorldManager : MonoBehaviour
             {
                 chunk.BuildCollisionMesh();
                 chunk.DrawChunk();
+
+                if (WorldBeeManager.Instance != null)
+                    WorldBeeManager.Instance.OnChunkGenerated(chunk);
             }
 
             if (activeChunks.ContainsKey(coord + Vector2Int.left) && !newChunkSet.Contains(coord + Vector2Int.left)) toRedraw.Add(coord + Vector2Int.left);
