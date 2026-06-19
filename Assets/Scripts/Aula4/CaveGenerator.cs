@@ -56,34 +56,18 @@ public static class CaveGenerator
         Vector2Int worldOffset, int wormsPerChunk, int steps, float radius,
         float stepSize, float directionScale)
     {
-        // Calculate the maximum possible distance a worm could travel
-        float maxDistance = steps * stepSize + radius;
-        // Convert that distance into chunk units (how many chunks away could a worm start and still reach us)
-        int chunkSearchRadius = Mathf.CeilToInt(maxDistance / chunkSize);
-
-        // Evaluate all chunks within the possible reach
-        for (int cx = -chunkSearchRadius; cx <= chunkSearchRadius; cx++)
+        for (int i = 0; i < wormsPerChunk; i++)
         {
-            for (int cz = -chunkSearchRadius; cz <= chunkSearchRadius; cz++)
-            {
-                Vector2Int originChunk = new Vector2Int(worldOffset.x + cx, worldOffset.y + cz);
+            // Para a geração procedural ter continuidade entre chunks com seeds diferentes
+            System.Random rng = new System.Random(Config.seedOffsetHash + worldOffset.x * 1234 + worldOffset.y * 5678);
 
-                // Use the origin chunk's coordinates to seed the RNG, ensuring perfect determinism
-                System.Random rng = new System.Random(Config.seedOffsetHash + originChunk.x * 1234 + originChunk.y * 5678);
+            // ponto de início aleatório dentro do chunk em coordenadas globais
+            float globalStartX = worldOffset.x * chunkSize + (float)(rng.NextDouble() * chunkSize);
+            float globalStartZ = worldOffset.y * chunkSize + (float)(rng.NextDouble() * chunkSize);
+            float globalStartY = (float)(rng.NextDouble() * (chunkHeight * 0.5f - 5f)) + 5f;
 
-                for (int i = 0; i < wormsPerChunk; i++)
-                {
-                    // Global start point randomized within the origin chunk
-                    float globalStartX = originChunk.x * chunkSize + (float)(rng.NextDouble() * chunkSize);
-                    float globalStartZ = originChunk.y * chunkSize + (float)(rng.NextDouble() * chunkSize);
-                    float globalStartY = (float)(rng.NextDouble() * (chunkHeight * 0.5f - 5f)) + 5f;
-
-                    Vector3 wormStart = new Vector3(globalStartX, globalStartY, globalStartZ);
-                    
-                    // Trace the worm. If it crosses into 'worldOffset' (current chunk), it will carve.
-                    CarveWorm(chunkData, chunkSize, chunkHeight, worldOffset, wormStart, steps, radius, stepSize, directionScale);
-                }
-            }
+            Vector3 wormStart = new Vector3(globalStartX, globalStartY, globalStartZ);
+            CarveWorm(chunkData, chunkSize, chunkHeight, worldOffset, wormStart, steps, radius, stepSize, directionScale);
         }
     }
 
@@ -112,6 +96,7 @@ public static class CaveGenerator
             CarveAt(chunkData, chunkSize, chunkHeight, worldOffset, pos, radius);
         }
     }
+    // TODO: worm cave generation seed based para ter cavernas naturais que passam entre varios chunks 
 
     /**
      * Escava uma esfera de ar em torno de uma posição específica.
