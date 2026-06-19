@@ -134,8 +134,8 @@ public class Chunk : MonoBehaviour
                 surfaceHeight[x, z] = 0;
                 for (int y = chunkHeight - 1; y >= 0; y--)
                 {
-                    float globalX = worldOffset.x * chunkSize + x;
-                    float globalZ = worldOffset.y * chunkSize + z;
+                    float globalX = worldOffset.x * chunkSize + x + Config.seedOffsetX;
+                    float globalZ = worldOffset.y * chunkSize + z + Config.seedOffsetZ;
 
                     float continentalness = NoiseUtils.FBm(globalX, globalZ, octaves / 2, densityScale / 4);
                     float baseHeight = NoiseUtils.FBm(globalX, globalZ, octaves, densityScale);
@@ -171,8 +171,8 @@ public class Chunk : MonoBehaviour
         {
             for (int z = 0; z < chunkSize; z++)
             {
-                float globalX = worldOffset.x * chunkSize + x;
-                float globalZ = worldOffset.y * chunkSize + z;
+                float globalX = worldOffset.x * chunkSize + x + Config.seedOffsetX;
+                float globalZ = worldOffset.y * chunkSize + z + Config.seedOffsetZ;
 
                 for (int y = 0; y < chunkHeight; y++)
                 {

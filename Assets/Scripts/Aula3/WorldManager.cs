@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using static Config;
@@ -36,8 +36,23 @@ public class WorldManager : MonoBehaviour
     [Tooltip("Se ativo, desativa a ocultaÃ§Ã£o de chunks fora da visÃ£o.")]
     public bool debug = false;
 
+    [Header("Seed Settings")]
+    [Tooltip("Se ativo, gera uma seed aleatória a cada play.")]
+    public bool useRandomSeed = true;
+    [Tooltip("Seed fixa (apenas usada se useRandomSeed for falso).")]
+    public int customSeed = 1337;
+
     void Awake()
     {
+        // 1. Configurar a Seed de Geração
+        if (useRandomSeed) customSeed = Random.Range(int.MinValue, int.MaxValue);
+        Random.InitState(customSeed);
+        
+        // Atribuir offsets grandes pseudo-aleatórios para deslocar o Perlin Noise
+        Config.seedOffsetX = Random.Range(-100000f, 100000f);
+        Config.seedOffsetZ = Random.Range(-100000f, 100000f);
+        Config.seedOffsetHash = customSeed;
+
         mainCamera = Camera.main;
         // Inicializa o Atlas usando as imagens individuais da pasta Resources
         if (chunkMaterial != null)

@@ -29,8 +29,8 @@ public static class VegetationGenerator
                 // Acima do nivel do mar
                 if (surfaceY <= seaLevel) continue;
 
-                float globalX = worldOffset.x * chunkSize + x;
-                float globalZ = worldOffset.y * chunkSize + z;
+                float globalX = worldOffset.x * chunkSize + x + Config.seedOffsetX;
+                float globalZ = worldOffset.y * chunkSize + z + Config.seedOffsetZ;
 
                 // 1. Avaliar se estamos numa zona de floresta (mesmo ruido base das arvores)
                 // Utilizamos a variavel SEED_SPAWN do TreeGenerator.
