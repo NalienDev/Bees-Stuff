@@ -97,6 +97,7 @@ public class GameBeeAgent : Agent
 
     public override void CollectObservations(VectorSensor sensor)
     {
+        sensor.AddObservation(isDead ? 1f : 0f);         // 1
         sensor.AddObservation(hunger / maxHunger);       // 1
         sensor.AddObservation(hasPollen ? 1f : 0f);      // 1
 
@@ -104,7 +105,7 @@ public class GameBeeAgent : Agent
             ? Mathf.Clamp01(hiveManager.HoneyStored / 5f) : 0f;
         sensor.AddObservation(honeyRatio);               // 1
 
-        if (nearestFlower != null)
+        if (nearestFlower != null && !isDead)
         {
             Vector3 dirFlower = (nearestFlower.transform.position - transform.position).normalized;
             float distFlower = Vector3.Distance(nearestFlower.transform.position, transform.position) / 20f;
@@ -128,7 +129,7 @@ public class GameBeeAgent : Agent
         sensor.AddObservation(pollinationTimer / pollinationThreshold); // 1
         sensor.AddObservation(GetGroundClearance());     // 1
         sensor.AddObservation(GetCeilingClearance());    // 1
-        // Total: 17 — must match training
+        // Total: 17 -- must match training
     }
 
     public override void OnActionReceived(ActionBuffers actions)
@@ -241,11 +242,51 @@ public class GameBeeAgent : Agent
 
     private Vector3 ClampAltitude(Vector3 worldPos)
     {
-        Vector3 rayOrigin = new Vector3(worldPos.x, worldPos.y + groundSenseDistance, worldPos.z);
-        if (Physics.Raycast(rayOrigin, Vector3.down, out RaycastHit hit, groundSenseDistance * 2f, terrainLayerMask))
+        // Start the raycast slightly above the bee's current Y position (e.g., 0.5f units)
+        // to detect the block directly underneath, instead of starting from high above.
+        // This prevents the raycast from hitting tree leaves or ceilings overhead.
+        Vector3 rayOrigin = new Vector3(worldPos.x, worldPos.y + 0.5f, worldPos.z);
+        if (Physics.Raycast(rayOrigin, Vector3.down, out RaycastHit hit, groundSenseDistance, terrainLayerMask))
         {
             float groundY = hit.point.y;
-            worldPos.y = Mathf.Clamp(worldPos.y, groundY + minHoverHeight, groundY + maxFlightHeight);
+            float minH = minHoverHeight;
+            float maxH = maxFlightHeight;
+
+            // Determine if the bee is trying to reach an active target (hive or flower)
+            Transform activeTarget = null;
+            if (hasPollen || hunger <= maxHunger * 0.6f)
+            {
+                activeTarget = hiveTransform;
+            }
+            else if (nearestFlower != null)
+            {
+                activeTarget = nearestFlower.transform;
+            }
+
+            if (activeTarget != null)
+            {
+                float horizontalDist = Vector2.Distance(
+                    new Vector2(worldPos.x, worldPos.z), 
+                    new Vector2(activeTarget.position.x, activeTarget.position.z)
+                );
+
+                // If close horizontally, assist the bee vertically to reach the target's height
+                if (horizontalDist < 3.0f)
+                {
+                    float targetYPos = activeTarget.position.y;
+                    float targetHeightOffset = targetYPos - groundY;
+                    
+                    // Temporarily expand flight bounds to accommodate target height
+                    if (targetHeightOffset > maxH) maxH = targetHeightOffset + 0.5f;
+                    if (targetHeightOffset < minH) minH = Mathf.Max(0.1f, targetHeightOffset - 0.5f);
+
+                    // Pull the bee's height towards the target height
+                    worldPos.y = Mathf.MoveTowards(worldPos.y, targetYPos, Time.deltaTime * 3f);
+                }
+            }
+
+            float targetY = Mathf.Clamp(worldPos.y, groundY + minH, groundY + maxH);
+            worldPos.y = Mathf.MoveTowards(worldPos.y, targetY, Time.deltaTime * 5f);
         }
         return worldPos;
     }
