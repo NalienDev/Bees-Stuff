@@ -200,7 +200,7 @@ MonoBehaviour:
   minHoverHeight: 1.2
   maxFlightHeight: 6
   groundSenseDistance: 40
-  moveSpeed: 4
+  moveSpeed: 5
   rotationSpeed: 3
   maxHunger: 45
   hungerRestoreAmount: 40
