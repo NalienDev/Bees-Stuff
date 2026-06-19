@@ -1,0 +1,29 @@
+{
+    "BeeHoneyCollector": {
+        "checkpoints": [
+            {
+                "steps": 458595,
+                "file_path": "results\\BeeHoneyCollector_run04\\BeeHoneyCollector\\BeeHoneyCollector-458595.onnx",
+                "reward": null,
+                "creation_time": 1781866862.089026,
+                "auxillary_file_paths": [
+                    "results\\BeeHoneyCollector_run04\\BeeHoneyCollector\\BeeHoneyCollector-458595.pt"
+                ]
+            }
+        ],
+        "final_checkpoint": {
+            "steps": 458595,
+            "file_path": "results\\BeeHoneyCollector_run04\\BeeHoneyCollector.onnx",
+            "reward": null,
+            "creation_time": 1781866862.089026,
+            "auxillary_file_paths": [
+                "results\\BeeHoneyCollector_run04\\BeeHoneyCollector\\BeeHoneyCollector-458595.pt"
+            ]
+        }
+    },
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "1.1.0",
+        "torch_version": "2.2.2+cpu"
+    }
+}

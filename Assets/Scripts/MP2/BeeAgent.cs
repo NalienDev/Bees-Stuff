@@ -86,6 +86,18 @@ public class BeeAgent : Agent
         }
     }
 
+    private void FixedUpdate()
+    {
+        if (rb == null) return;
+
+        // Hard cap on velocity - prevents any physics impulse from
+        // sending the bee flying at uncontrolled speeds
+        if (rb.linearVelocity.magnitude > moveSpeed)
+        {
+            rb.linearVelocity = rb.linearVelocity.normalized * moveSpeed;
+        }
+    }
+
     public override void OnEpisodeBegin()
     {
         hungerDecayRate = (float)Academy.Instance.EnvironmentParameters
