@@ -9,8 +9,8 @@ using UnityEngine.UI;
 public class GameBeeAgent : Agent
 {
     [Header("Referencias")]
-    public GameHiveManager hiveManager;
-    public Transform hiveTransform;
+    [HideInInspector] public GameHiveManager hiveManager;
+    [HideInInspector] public Transform hiveTransform;
     public MeshRenderer floorRenderer;
     public Transform beeModel;
 

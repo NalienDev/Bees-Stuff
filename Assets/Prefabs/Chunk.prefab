@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 3553666434198380110}
   - component: {fileID: 7000586977369587522}
   - component: {fileID: 6735560210093186140}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Chunk
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -113,10 +113,6 @@ MonoBehaviour:
   seaLevel: 12
   detailAmplitude: 0
   detailWeight: 8
-  islandScale: 0.025
-  islandThreshold: 0.45
-  islandRadius: 10
-  islandDensityScale: 0.15
   caveScale: 0.06
   caveThreshold: 0.72
   margin: 4

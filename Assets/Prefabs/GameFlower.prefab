@@ -27,8 +27,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1025935425500280442}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: 0.6087605, z: -0, w: 0.79335415}
-  m_LocalPosition: {x: 0, y: 1, z: 0}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.2, y: 1, z: -0.105}
   m_LocalScale: {x: 0.112509996, y: 0.069409996, z: 0.09297}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -124,9 +124,10 @@ GameObject:
   m_Component:
   - component: {fileID: 5673790893662434926}
   - component: {fileID: 1121135307059881480}
+  - component: {fileID: -7480313674032906019}
   m_Layer: 0
   m_Name: GameFlower
-  m_TagString: Untagged
+  m_TagString: Flower
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -163,3 +164,26 @@ MonoBehaviour:
   flowerRenderer: {fileID: 5617763252071222807}
   chargedMaterial: {fileID: 2100000, guid: 6e9bd1b6c7f60204e89f9c692968238d, type: 2}
   depletedMaterial: {fileID: 2100000, guid: a9c921a2ff3ec2b48bf9562d69a639bc, type: 2}
+--- !u!136 &-7480313674032906019
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6588143877008354522}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.35581806
+  m_Height: 1.4227765
+  m_Direction: 1
+  m_Center: {x: 0.22023462, y: 0.21138823, z: -0.076052755}
