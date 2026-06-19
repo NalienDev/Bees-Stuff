@@ -117,6 +117,7 @@ public class Block
         AtlasMaterial = new Material(baseMaterial);
         AtlasMaterial.mainTexture = runtimeAtlas;
         AtlasMaterial.color = Color.white;
+        AtlasMaterial.SetInt("_Cull", 0);
     }
 
     /**
@@ -212,6 +213,21 @@ public class Block
         {
             triangles.Add(vertexIndex + tri[i]);
         }
+
+        if (type == BlockType.LEAVES)
+        {
+            int backVertexIndex = vertices.Count;
+            for (int i = 0; i < 4; i++)
+            {
+                vertices.Add(faceVertices[i] + this.position);
+                uvs.Add(uv[i]);
+            }
+            int[] backTri = new int[] { 0, 1, 3, 1, 2, 3 };
+            for (int i = 0; i < 6; i++)
+            {
+                triangles.Add(backVertexIndex + backTri[i]);
+            }
+        }
     }
 
     /**
@@ -267,4 +283,7 @@ public class Block
         }
     }
 }
+
+
+
 
