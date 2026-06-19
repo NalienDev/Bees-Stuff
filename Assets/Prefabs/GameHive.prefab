@@ -63,6 +63,9 @@ MonoBehaviour:
   hiveTransform: {fileID: 4792930037669787675, guid: 490d21115873d29429dc4266218a9ce1, type: 3}
   maxBees: 3
   hiveManager: {fileID: 4768920831850159972}
+  terrainLayerMask:
+    serializedVersion: 2
+    m_Bits: 8
 --- !u!65 &265651834770586453
 BoxCollider:
   m_ObjectHideFlags: 0

@@ -82,7 +82,7 @@ public class GameBeeAgent : Agent
     {
         if (hungerSlider != null)
         {
-            hungerSlider.value = hunger / maxHunger;
+            hungerSlider.value = hunger;
             if (billboardUI && Camera.main != null)
                 hungerSlider.transform.parent.rotation = Camera.main.transform.rotation;
         }

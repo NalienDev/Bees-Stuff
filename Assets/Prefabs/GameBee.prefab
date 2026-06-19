@@ -197,14 +197,14 @@ MonoBehaviour:
   terrainLayerMask:
     serializedVersion: 2
     m_Bits: 8
-  minHoverHeight: 2
+  minHoverHeight: 1.2
   maxFlightHeight: 6
   groundSenseDistance: 40
   moveSpeed: 5
   rotationSpeed: 3
   maxHunger: 45
   hungerRestoreAmount: 40
-  hungerDecayMultiplier: 4
+  hungerDecayMultiplier: 40
   hungerDecayRate: 0.01
   pollinationThreshold: 1.5
   interactionRadius: 1.2

@@ -56,11 +56,7 @@ public class WorldBeeManager : MonoBehaviour
                     if (type != Block.BlockType.HIVE && type != Block.BlockType.FLOWER)
                         continue;
 
-                    Vector3 worldPos = new Vector3(
-                        coord.x * chunkSize + x + 0.5f,
-                        y + 0.5f,
-                        coord.y * chunkSize + z + 0.5f
-                    );
+                    Vector3 worldPos = chunk.transform.position + new Vector3(x, y, z);
 
                     if (type == Block.BlockType.HIVE)
                     {
