@@ -244,10 +244,19 @@ public class GameBeeAgent : Agent
 
         sensor.AddObservation(hasPollen ? 1f : 0f);     // 1
 
-        Vector3 dirHive = (hiveTransform.position - transform.position).normalized;
-        float distHive = Vector3.Distance(hiveTransform.position, transform.position) / 20f;
-        sensor.AddObservation(dirHive);                  // 3
-        sensor.AddObservation(distHive);                 // 1
+        if (hiveTransform != null)
+        {
+            Vector3 dirHive = (hiveTransform.position - transform.position).normalized;
+            float distHive = Vector3.Distance(hiveTransform.position, transform.position) / 20f;
+            sensor.AddObservation(dirHive);                  // 3
+            sensor.AddObservation(distHive);                 // 1
+        }
+        else
+        {
+            sensor.AddObservation(Vector3.zero);             // 3
+            sensor.AddObservation(0f);                       // 1
+        }
+
         sensor.AddObservation(pollinationTimer / pollinationThreshold); // 1
         sensor.AddObservation(GetGroundClearance());     // 1
         sensor.AddObservation(GetCeilingClearance());    // 1
@@ -353,7 +362,7 @@ public class GameBeeAgent : Agent
 
         if (!isNearFlower) pollinationTimer = 0f;
 
-        if (interact == 1)
+        if (interact == 1 && hiveTransform != null)
         {
             float distToHive = Vector3.Distance(transform.position, hiveTransform.position);
             if (distToHive < hiveInteractionRadius)
@@ -419,7 +428,8 @@ public class GameBeeAgent : Agent
             Transform activeTarget = null;
             if (hasPollen || hunger <= maxHunger * 0.6f)
             {
-                activeTarget = hiveTransform;
+                if (hiveTransform != null)
+                    activeTarget = hiveTransform;
             }
             else if (nearestFlower != null)
             {

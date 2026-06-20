@@ -277,7 +277,7 @@ MonoBehaviour:
     VectorActionSpaceType: 1
     hasUpgradedBrainParametersWithActionSpec: 1
   m_Model: {fileID: 5022602860645237092, guid: 074b63ef6384e7549bdf52a913102d4e, type: 3}
-  m_InferenceDevice: 1
+  m_InferenceDevice: 2
   m_BehaviorType: 2
   m_BehaviorName: BeeHoneyCollector
   TeamId: 0
@@ -383,6 +383,9 @@ MonoBehaviour:
   - {fileID: 4948308539106386444}
   hungerBar: {fileID: 7741238045425113270}
   billboardUI: 1
+  visualSmoothSpeed: 8
+  visualRotationSmoothSpeed: 10
+  hiveHideRadius: 1.2
   terrainLayerMask:
     serializedVersion: 2
     m_Bits: 8

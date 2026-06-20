@@ -9,6 +9,23 @@ public class GameHiveManager : MonoBehaviour
 
     public float HoneyStored => honeyStored;
     public List<FlowerController> AllFlowers => allFlowers;
+    public int BeesCount => bees.Count;
+
+    private void Start()
+    {
+        if (LoadingScreenManager.Instance != null)
+        {
+            LoadingScreenManager.Instance.RegisterHive(this);
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (LoadingScreenManager.Instance != null)
+        {
+            LoadingScreenManager.Instance.UnregisterHive(this);
+        }
+    }
 
     public void RegisterBee(GameBeeAgent bee)
     {

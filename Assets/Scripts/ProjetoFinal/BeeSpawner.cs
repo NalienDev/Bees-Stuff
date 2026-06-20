@@ -12,10 +12,13 @@ public class BeeSpawner : MonoBehaviour
 
     private List<GameBeeAgent> aliveBees = new List<GameBeeAgent>();
 
+    public bool HasSpawnedInitial { get; private set; } = false;
+
     private void Start()
     {
         for (int i = 0; i < maxBees; i++)
             SpawnBee();
+        HasSpawnedInitial = true;
     }
 
     public void SpawnBee()
@@ -46,5 +49,20 @@ public class BeeSpawner : MonoBehaviour
 
         // Spawn a replacement after a short delay
         Invoke(nameof(SpawnBee), 2f);
+    }
+
+    private void OnDestroy()
+    {
+        if (aliveBees != null)
+        {
+            foreach (var bee in aliveBees)
+            {
+                if (bee != null)
+                {
+                    Destroy(bee.gameObject);
+                }
+            }
+            aliveBees.Clear();
+        }
     }
 }
