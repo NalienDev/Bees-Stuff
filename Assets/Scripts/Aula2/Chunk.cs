@@ -316,9 +316,15 @@ public class Chunk : MonoBehaviour
      */
     public void BuildCollisionMesh()
     {
+        // --- Main collision mesh (everything solid EXCEPT leaves) ---
         List<Vector3> vertices = new List<Vector3>();
         List<int> triangles = new List<int>();
         List<Vector2> uvs = new List<Vector2>();
+
+        // --- Separate leaves collision mesh ---
+        List<Vector3> leavesVerts = new List<Vector3>();
+        List<int> leavesTris = new List<int>();
+        List<Vector2> leavesUvs = new List<Vector2>();
 
         for (int x = 0; x < chunkSize; x++)
             for (int y = 0; y < chunkHeight; y++)
@@ -326,14 +332,21 @@ public class Chunk : MonoBehaviour
                 {
                     Block block = chunkData[x, y, z];
                     if (!block.isSolid) continue;
-                    if (!HasSolidNeighbour(x, y, z + 1)) block.AddFaceToMeshData(Block.CubeFace.Front, vertices, triangles, uvs);
-                    if (!HasSolidNeighbour(x, y, z - 1)) block.AddFaceToMeshData(Block.CubeFace.Back, vertices, triangles, uvs);
-                    if (!HasSolidNeighbour(x, y + 1, z)) block.AddFaceToMeshData(Block.CubeFace.Top, vertices, triangles, uvs);
-                    if (!HasSolidNeighbour(x, y - 1, z)) block.AddFaceToMeshData(Block.CubeFace.Bottom, vertices, triangles, uvs);
-                    if (!HasSolidNeighbour(x - 1, y, z)) block.AddFaceToMeshData(Block.CubeFace.Left, vertices, triangles, uvs);
-                    if (!HasSolidNeighbour(x + 1, y, z)) block.AddFaceToMeshData(Block.CubeFace.Right, vertices, triangles, uvs);
+
+                    bool isLeaf = (block.type == Block.BlockType.LEAVES);
+                    var vList = isLeaf ? leavesVerts : vertices;
+                    var tList = isLeaf ? leavesTris : triangles;
+                    var uList = isLeaf ? leavesUvs : uvs;
+
+                    if (!HasSolidNeighbour(x, y, z + 1)) block.AddFaceToMeshData(Block.CubeFace.Front, vList, tList, uList);
+                    if (!HasSolidNeighbour(x, y, z - 1)) block.AddFaceToMeshData(Block.CubeFace.Back, vList, tList, uList);
+                    if (!HasSolidNeighbour(x, y + 1, z)) block.AddFaceToMeshData(Block.CubeFace.Top, vList, tList, uList);
+                    if (!HasSolidNeighbour(x, y - 1, z)) block.AddFaceToMeshData(Block.CubeFace.Bottom, vList, tList, uList);
+                    if (!HasSolidNeighbour(x - 1, y, z)) block.AddFaceToMeshData(Block.CubeFace.Left, vList, tList, uList);
+                    if (!HasSolidNeighbour(x + 1, y, z)) block.AddFaceToMeshData(Block.CubeFace.Right, vList, tList, uList);
                 }
 
+        // Build main collision mesh
         Mesh collisionMesh = new Mesh();
         collisionMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
         collisionMesh.vertices = vertices.ToArray();
@@ -343,6 +356,48 @@ public class Chunk : MonoBehaviour
         MeshCollider col = gameObject.GetComponent<MeshCollider>();
         if (col == null) col = gameObject.AddComponent<MeshCollider>();
         col.sharedMesh = collisionMesh;
+
+        // Build leaves collision mesh on a separate child with the "Leaves" layer
+        BuildLeavesCollider(leavesVerts, leavesTris);
+    }
+
+    /// <summary>
+    /// Creates (or updates) a child GameObject on the "Leaves" layer with a MeshCollider
+    /// containing only leaf block geometry, allowing per-layer collision ignoring.
+    /// </summary>
+    private void BuildLeavesCollider(List<Vector3> verts, List<int> tris)
+    {
+        // Find or create child
+        Transform leavesChild = transform.Find("LeavesCollider");
+        GameObject leavesGO;
+        if (leavesChild != null)
+        {
+            leavesGO = leavesChild.gameObject;
+        }
+        else
+        {
+            leavesGO = new GameObject("LeavesCollider");
+            leavesGO.transform.SetParent(transform, false);
+            leavesGO.layer = LayerMask.NameToLayer("Leaves");
+        }
+
+        if (verts.Count == 0)
+        {
+            // No leaves in this chunk — remove collider if any
+            MeshCollider mc = leavesGO.GetComponent<MeshCollider>();
+            if (mc != null) DestroyImmediate(mc);
+            return;
+        }
+
+        Mesh leavesMesh = new Mesh();
+        leavesMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+        leavesMesh.vertices = verts.ToArray();
+        leavesMesh.triangles = tris.ToArray();
+        leavesMesh.RecalculateBounds();
+
+        MeshCollider leavesCol = leavesGO.GetComponent<MeshCollider>();
+        if (leavesCol == null) leavesCol = leavesGO.AddComponent<MeshCollider>();
+        leavesCol.sharedMesh = leavesMesh;
     }
 
     /**

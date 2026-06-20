@@ -22,6 +22,16 @@ public class GameBeeAgent : Agent
     public GameObject hungerBar;
     public bool billboardUI = true;
 
+    [Header("Visual Smoothing")]
+    [Tooltip("How quickly the visual model catches up to the real position. Higher = snappier.")]
+    public float visualSmoothSpeed = 8f;
+    [Tooltip("How quickly the visual model's rotation catches up. Higher = snappier.")]
+    public float visualRotationSmoothSpeed = 10f;
+
+    [Header("Hive Proximity Visibility")]
+    [Tooltip("When the bee is closer than this distance to its hive, visuals are hidden.")]
+    public float hiveHideRadius = 2f;
+
     [Header("Voo")]
     public LayerMask terrainLayerMask;
     public float minHoverHeight = 0.5f;
@@ -51,6 +61,16 @@ public class GameBeeAgent : Agent
     private bool isDead;
     private FlowerController nearestFlower;
     private Rigidbody rb;
+    private Vector3 lastPosition;
+    private float stuckTimer;
+
+    // Visual smoothing state
+    private Vector3 smoothVisualPosition;
+    private Quaternion smoothVisualRotation;
+    private bool beeModelIsChild = true;
+    private bool visualsHidden;
+    private float reappearCooldown;
+    private const float ReappearDelay = 1f;
 
     public override void Initialize()
     {
@@ -63,6 +83,23 @@ public class GameBeeAgent : Agent
 
         if (beeModel == null) beeModel = transform;
         beeRenderers = beeModel.GetComponentsInChildren<SkinnedMeshRenderer>();
+
+        // Detach the visual model from the agent so its position can be smoothed independently.
+        // Only do this if beeModel is an actual child (not transform itself).
+        beeModelIsChild = (beeModel != transform && beeModel.parent == transform);
+        if (beeModelIsChild)
+        {
+            beeModel.SetParent(null, true);
+        }
+
+        smoothVisualPosition = transform.position;
+        smoothVisualRotation = beeModel.rotation;
+
+        // Allow bees to pass through leaf blocks — ignore collisions between Bee and Leaves layers
+        int beeLayer = LayerMask.NameToLayer("Bee");
+        int leavesLayer = LayerMask.NameToLayer("Leaves");
+        if (beeLayer >= 0 && leavesLayer >= 0)
+            Physics.IgnoreLayerCollision(beeLayer, leavesLayer, true);
     }
 
     // OnEpisodeBegin fires once on first init since MaxStep = 0
@@ -81,6 +118,12 @@ public class GameBeeAgent : Agent
 
         StartCoroutine(ZeroVelocityNextFrame());
         UpdateNearestFlower();
+        lastPosition = transform.position;
+        stuckTimer = 0f;
+
+        // Snap visual to real position on episode start
+        smoothVisualPosition = transform.position;
+        smoothVisualRotation = beeModel != null ? beeModel.rotation : transform.rotation;
     }
 
     private void SetPollenMaterial(bool carrying)
@@ -92,6 +135,45 @@ public class GameBeeAgent : Agent
     }
     private void Update()
     {
+        // --- Visual smoothing ---
+        if (beeModelIsChild && beeModel != null)
+        {
+            smoothVisualPosition = Vector3.Lerp(smoothVisualPosition, transform.position, Time.deltaTime * visualSmoothSpeed);
+            beeModel.position = smoothVisualPosition;
+
+            // Smooth rotation is driven by OnActionReceived writing to beeModel.rotation via Slerp already,
+            // but since beeModel is now detached, we also smoothly blend toward the agent-driven target rotation.
+            smoothVisualRotation = Quaternion.Slerp(smoothVisualRotation, beeModel.rotation, Time.deltaTime * visualRotationSmoothSpeed);
+            // beeModel.rotation is already set by OnActionReceived, so we just keep position smooth.
+        }
+
+        // --- Hive proximity visibility ---
+        if (hiveTransform != null)
+        {
+            float distToHive = Vector3.Distance(transform.position, hiveTransform.position);
+            bool shouldHide = distToHive < hiveHideRadius;
+
+            if (shouldHide && !visualsHidden)
+            {
+                // Hide immediately when entering radius
+                visualsHidden = true;
+                reappearCooldown = 0f;
+                SetVisualsActive(false);
+            }
+            else if (!shouldHide && visualsHidden)
+            {
+                // Delay reappearing by cooldown
+                reappearCooldown += Time.deltaTime;
+                if (reappearCooldown >= ReappearDelay)
+                {
+                    visualsHidden = false;
+                    reappearCooldown = 0f;
+                    SetVisualsActive(true);
+                }
+            }
+        }
+
+        // --- Hunger bar UI ---
         if (hungerBar != null)
         {
             int numOfFood = toggles.Count;
@@ -110,6 +192,22 @@ public class GameBeeAgent : Agent
                     hungerBar.transform.parent.rotation = Quaternion.LookRotation(dirToCamera);
             }
         }
+    }
+
+    /// <summary>
+    /// Toggles all visual elements (renderers + hunger bar) on or off.
+    /// </summary>
+    private void SetVisualsActive(bool active)
+    {
+        if (beeRenderers != null)
+        {
+            foreach (var smr in beeRenderers)
+            {
+                if (smr != null) smr.enabled = active;
+            }
+        }
+        if (hungerBar != null)
+            hungerBar.SetActive(active);
     }
 
     private void FixedUpdate()
@@ -178,6 +276,35 @@ public class GameBeeAgent : Agent
         Vector3 moveDir = new Vector3(moveX, moveY, moveZ);
 
         Vector3 currentPos = rb != null ? rb.position : transform.position;
+
+        // Unstuck nudge logic: if trying to move but stuck, nudge up and sideways to clear blocks
+        if (moveDir.sqrMagnitude > 0.01f)
+        {
+            float distMoved = Vector3.Distance(currentPos, lastPosition);
+            if (distMoved < 0.1f * Time.deltaTime * moveSpeed)
+            {
+                stuckTimer += Time.deltaTime;
+                if (stuckTimer > 0.4f)
+                {
+                    // Calculate a sideways vector relative to movement direction to slip past corners
+                    Vector3 slideDir = new Vector3(-moveDir.z, 0f, moveX).normalized;
+                    Vector3 nudge = (Vector3.up * 2f + slideDir * 1f) * Time.deltaTime;
+                    currentPos += nudge;
+                    if (rb != null) rb.position = currentPos;
+                    else transform.position = currentPos;
+                }
+            }
+            else
+            {
+                stuckTimer = 0f;
+            }
+        }
+        else
+        {
+            stuckTimer = 0f;
+        }
+        lastPosition = currentPos;
+
         Vector3 targetPos = ClampAltitude(currentPos + moveDir * Time.deltaTime * moveSpeed);
 
         if (rb != null) rb.MovePosition(targetPos);
@@ -187,7 +314,9 @@ public class GameBeeAgent : Agent
         if (horizontalDir.sqrMagnitude > 0.001f && beeModel != null)
         {
             Quaternion targetRot = Quaternion.LookRotation(horizontalDir);
-            beeModel.rotation = Quaternion.Slerp(beeModel.rotation, targetRot, Time.deltaTime * rotationSpeed);
+            // Smooth rotation — beeModel may be detached, but we still drive its rotation here
+            smoothVisualRotation = Quaternion.Slerp(smoothVisualRotation, targetRot, Time.deltaTime * rotationSpeed);
+            beeModel.rotation = smoothVisualRotation;
         }
 
         // Interactions
@@ -257,13 +386,21 @@ public class GameBeeAgent : Agent
         isDead = true;
         ReleaseCurrentFlower();
 
+        // Hide visuals on death
+        SetVisualsActive(false);
+
         Debug.Log($"{gameObject.name} died.");
         if (spawner != null)
             spawner.OnBeeDied(this);
     }
 
-    // No rewards needed in game mode � these are here
-    // only because Agent requires the override
+    private void OnDestroy()
+    {
+        // Clean up the detached beeModel when the agent is destroyed
+        if (beeModelIsChild && beeModel != null)
+            Destroy(beeModel.gameObject);
+    }
+
     public override void Heuristic(in ActionBuffers actionsOut) { }
 
     private Vector3 ClampAltitude(Vector3 worldPos)
