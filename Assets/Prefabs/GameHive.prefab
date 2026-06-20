@@ -61,7 +61,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BeeSpawner
   beePrefab: {fileID: 499308193751162746, guid: 490d21115873d29429dc4266218a9ce1, type: 3}
   hiveTransform: {fileID: 4792930037669787675, guid: 490d21115873d29429dc4266218a9ce1, type: 3}
-  maxBees: 3
+  maxBees: 2
   hiveManager: {fileID: 4768920831850159972}
   terrainLayerMask:
     serializedVersion: 2
