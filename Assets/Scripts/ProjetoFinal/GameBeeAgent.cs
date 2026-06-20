@@ -11,11 +11,15 @@ public class GameBeeAgent : Agent
     [Header("Referencias")]
     [HideInInspector] public GameHiveManager hiveManager;
     [HideInInspector] public Transform hiveTransform;
-    public MeshRenderer floorRenderer;
     public Transform beeModel;
 
+    private SkinnedMeshRenderer[] beeRenderers;
+    public Material normalMaterial;
+    public Material pollenMaterial;
+
     [Header("UI")]
-    public Slider hungerSlider;
+    public List<Toggle> toggles = new List<Toggle>();
+    public GameObject hungerBar;
     public bool billboardUI = true;
 
     [Header("Voo")]
@@ -58,6 +62,7 @@ public class GameBeeAgent : Agent
         }
 
         if (beeModel == null) beeModel = transform;
+        beeRenderers = beeModel.GetComponentsInChildren<SkinnedMeshRenderer>();
     }
 
     // OnEpisodeBegin fires once on first init since MaxStep = 0
@@ -78,13 +83,32 @@ public class GameBeeAgent : Agent
         UpdateNearestFlower();
     }
 
+    private void SetPollenMaterial(bool carrying)
+    {
+        if (beeRenderers == null || normalMaterial == null || pollenMaterial == null) return;
+        Material mat = carrying ? pollenMaterial : normalMaterial;
+        foreach (var smr in beeRenderers)
+            smr.material = mat;
+    }
     private void Update()
     {
-        if (hungerSlider != null)
+        if (hungerBar != null)
         {
-            hungerSlider.value = hunger;
+            int numOfFood = toggles.Count;
+            float hungerPerSegment = maxHunger / numOfFood;
+
+            for (int i = 0; i < numOfFood; i++)
+            {
+                toggles[i].isOn = hunger >= hungerPerSegment * i;
+            }
+
             if (billboardUI && Camera.main != null)
-                hungerSlider.transform.parent.rotation = Camera.main.transform.rotation;
+            {
+                Vector3 dirToCamera = hungerBar.transform.parent.position - Camera.main.transform.position;
+                dirToCamera.y = 0f;
+                if (dirToCamera != Vector3.zero)
+                    hungerBar.transform.parent.rotation = Quaternion.LookRotation(dirToCamera);
+            }
         }
     }
 
@@ -187,6 +211,7 @@ public class GameBeeAgent : Agent
                             pollinationTimer = 0f;
                             ReleaseCurrentFlower();
                             nearestFlower = null;
+                            SetPollenMaterial(true);
                         }
                     }
                 }
@@ -208,6 +233,7 @@ public class GameBeeAgent : Agent
                 {
                     hiveManager.DeliverPollen(30f);
                     hasPollen = false;
+                    SetPollenMaterial(false);
                 }
                 else if (hunger <= maxHunger * 0.6f)
                 {
