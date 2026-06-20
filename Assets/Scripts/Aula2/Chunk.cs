@@ -255,7 +255,7 @@ public class Chunk : MonoBehaviour
                         // Camada muito profunda
                         type = Block.BlockType.COBBLESTONE;
                     }
-                    else if (depthFromSurface > 4 + layerNoise)
+                    else if (depthFromSurface > 3f + (layerNoise * 0.5f))
                     {
                         // Debaixo da terra
                         type = Block.BlockType.STONE;

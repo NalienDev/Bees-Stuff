@@ -112,12 +112,10 @@ public class Block
         loadTex("leaves_jungle", true);
         loadTex("snowbush", true);
 
-        // Criar a textura do atlas global em alta resolucao SEM mipmaps.
-        // Os mipmaps causam "shadow stripes" ao longe porque misturam os pixels das bordas da textura
-        // com o padding preto adjacente no atlas.
-        Texture2D runtimeAtlas = new Texture2D(2048, 2048, TextureFormat.RGBA32, false);
+        // Criar a textura do atlas global em alta resolucao COM mipmaps.
+        Texture2D runtimeAtlas = new Texture2D(2048, 2048, TextureFormat.RGBA32, true);
         runtimeAtlas.filterMode = FilterMode.Point; // Mantem o aspeto pixel-art nitido sem esborratar
-        runtimeAtlas.anisoLevel = 0; // Sem filtragem anisotrópica
+        runtimeAtlas.anisoLevel = 1;
 
         // O Unity junta as texturas todas aqui e retorna os sub-retangulos (coordenadas) correspondentes
         Rect[] rects = runtimeAtlas.PackTextures(texturesToPack.ToArray(), 4, 2048, false);
