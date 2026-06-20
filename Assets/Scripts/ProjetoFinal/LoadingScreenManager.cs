@@ -15,6 +15,12 @@ public class LoadingScreenManager : MonoBehaviour
     [Tooltip("Marginal offset from the bottom-right corner in pixels.")]
     public Vector2 cornerOffset = new Vector2(20f, 20f);
 
+    [Header("Center Image Settings")]
+    [Tooltip("Static image to show in the center of the loading screen.")]
+    public Texture2D centerImage;
+    [Tooltip("Target size of the center image in pixels.")]
+    public Vector2 centerImageSize = new Vector2(256f, 256f);
+
     private bool isLoaded = false;
     private GUIStyle backgroundStyle;
     private Texture2D bgTexture;
@@ -85,6 +91,13 @@ public class LoadingScreenManager : MonoBehaviour
         }
 
         GUI.Box(new Rect(0, 0, Screen.width, Screen.height), "", backgroundStyle);
+
+        if (centerImage != null)
+        {
+            float cx = (Screen.width - centerImageSize.x) * 0.5f;
+            float cy = (Screen.height - centerImageSize.y) * 0.5f;
+            GUI.DrawTexture(new Rect(cx, cy, centerImageSize.x, centerImageSize.y), centerImage, ScaleMode.ScaleToFit);
+        }
 
         if (animationFrames != null && animationFrames.Length > 0)
         {
