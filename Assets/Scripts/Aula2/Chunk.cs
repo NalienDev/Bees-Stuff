@@ -250,12 +250,12 @@ public class Chunk : MonoBehaviour
                         // Bedrock na base absoluta (y = 0 a ~3 dependendo do ruído)
                         type = Block.BlockType.BEDROCK;
                     }
-                    else if (depthFromSurface > 25 + layerNoise)
+                    else if (finalDensity > 25f + layerNoise)
                     {
                         // Camada muito profunda
                         type = Block.BlockType.COBBLESTONE;
                     }
-                    else if (depthFromSurface > 4 + layerNoise)
+                    else if (finalDensity > 3.5f + (layerNoise * 0.5f))
                     {
                         // Debaixo da terra
                         type = Block.BlockType.STONE;
