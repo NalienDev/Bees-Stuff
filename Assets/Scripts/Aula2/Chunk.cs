@@ -86,21 +86,24 @@ public class Chunk : MonoBehaviour
     void InitializeChunk()
     {
         chunkData = new Block[chunkSize, chunkHeight, chunkSize];
+        Biome[,] columnBiomes = new Biome[chunkSize, chunkSize];
+        GetColumnBiomes(columnBiomes);
+
         int[,] surfaceHeight = new int[chunkSize, chunkSize];
 
         // 1. Calcular alturas
-        GetColumnSurfaceHeight(surfaceHeight);
+        GetColumnSurfaceHeight(surfaceHeight, columnBiomes);
         // 2. Gerar terreno sólido com camadas base
-        CreateInitialChunkData(surfaceHeight);
+        CreateInitialChunkData(surfaceHeight, columnBiomes);
         // 3. Escavar grutas (transforma blocos em AIR)
         CaveGenerator.GenerateWorms(chunkData, chunkSize, chunkHeight, worldOffset, wormsPerChunk, steps, radius, stepSize, directionScale);
         // 4. Gerar água
         GenerateWater();
         // 5. Atualizar terra exposta pela escavação
-        UpdateExposedDirt();
+        UpdateExposedDirt(columnBiomes);
         // 6. Plantar árvores e vegetação
-        TreeGenerator.PlantTrees(chunkData, worldOffset, seaLevel);
-        VegetationGenerator.PlantVegetation(chunkData, worldOffset, seaLevel);
+        TreeGenerator.PlantTrees(chunkData, worldOffset, seaLevel, columnBiomes);
+        VegetationGenerator.PlantVegetation(chunkData, worldOffset, seaLevel, columnBiomes);
     }
 
     /**
@@ -109,14 +112,45 @@ public class Chunk : MonoBehaviour
      */
     public void GenerateChunkData()
     {
+        Biome[,] columnBiomes = new Biome[chunkSize, chunkSize];
+        GetColumnBiomes(columnBiomes);
+
         int[,] surfaceHeight = new int[chunkSize, chunkSize];
-        GetColumnSurfaceHeight(surfaceHeight);
-        CreateInitialChunkData(surfaceHeight);
+        GetColumnSurfaceHeight(surfaceHeight, columnBiomes);
+        CreateInitialChunkData(surfaceHeight, columnBiomes);
         CaveGenerator.GenerateWorms(chunkData, chunkSize, chunkHeight, worldOffset, wormsPerChunk, steps, radius, stepSize, directionScale);
         GenerateWater();
         TextureCaveWalls(surfaceHeight);
-        TreeGenerator.PlantTrees(chunkData, worldOffset, seaLevel);
-        VegetationGenerator.PlantVegetation(chunkData, worldOffset, seaLevel);
+        UpdateExposedDirt(columnBiomes);
+        TreeGenerator.PlantTrees(chunkData, worldOffset, seaLevel, columnBiomes);
+        VegetationGenerator.PlantVegetation(chunkData, worldOffset, seaLevel, columnBiomes);
+    }
+
+    private void GetColumnBiomes(Biome[,] columnBiomes)
+    {
+        for (int x = 0; x < chunkSize; x++)
+        {
+            for (int z = 0; z < chunkSize; z++)
+            {
+                float globalX = worldOffset.x * chunkSize + x + Config.seedOffsetX;
+                float globalZ = worldOffset.y * chunkSize + z + Config.seedOffsetZ;
+                columnBiomes[x, z] = BiomeManager.GetBiomeAt(globalX, globalZ);
+            }
+        }
+    }
+
+    private void GetBlendedTerrain(float globalX, float globalZ, out float b_scale, out int b_octaves, out float b_maxSolidHeight, out float b_detailWeight)
+    {
+        Biome b1 = BiomeManager.GetBiomeAt(globalX, globalZ);
+        Biome b2 = BiomeManager.GetBiomeAt(globalX - 8, globalZ);
+        Biome b3 = BiomeManager.GetBiomeAt(globalX + 8, globalZ);
+        Biome b4 = BiomeManager.GetBiomeAt(globalX, globalZ - 8);
+        Biome b5 = BiomeManager.GetBiomeAt(globalX, globalZ + 8);
+        
+        b_scale = (b1.scale + b2.scale + b3.scale + b4.scale + b5.scale) / 5f;
+        b_octaves = Mathf.RoundToInt((b1.octaves + b2.octaves + b3.octaves + b4.octaves + b5.octaves) / 5f);
+        b_maxSolidHeight = (b1.maxSolidHeight + b2.maxSolidHeight + b3.maxSolidHeight + b4.maxSolidHeight + b5.maxSolidHeight) / 5f;
+        b_detailWeight = (b1.detailWeight + b2.detailWeight + b3.detailWeight + b4.detailWeight + b5.detailWeight) / 5f;
     }
 
     /**
@@ -125,32 +159,27 @@ public class Chunk : MonoBehaviour
      * 
      * @param surfaceHeight: Matriz 2D onde será guardada a altura máxima de cada coluna
      */
-    private void GetColumnSurfaceHeight(int[,] surfaceHeight)
+    private void GetColumnSurfaceHeight(int[,] surfaceHeight, Biome[,] columnBiomes)
     {
         for (int x = 0; x < chunkSize; x++)
         {
             for (int z = 0; z < chunkSize; z++)
             {
                 surfaceHeight[x, z] = 0;
+                float globalX = worldOffset.x * chunkSize + x + Config.seedOffsetX;
+                float globalZ = worldOffset.y * chunkSize + z + Config.seedOffsetZ;
+
+                GetBlendedTerrain(globalX, globalZ, out float b_scale, out int b_octaves, out float b_maxSolidHeight, out float b_detailWeight);
+
+                float continentalness = NoiseUtils.FBm(globalX, globalZ, b_octaves / 2, densityScale / 4);
+                float baseHeight = NoiseUtils.FBm(globalX, globalZ, b_octaves, densityScale);
+                float detail = NoiseUtils.FBm(globalX, globalZ, (b_octaves / 2) * 3, densityScale * 5);
+                float h = Mathf.Lerp(seaLevel, b_maxSolidHeight, continentalness * baseHeight) + detail * detailAmplitude;
+
                 for (int y = chunkHeight - 1; y >= 0; y--)
                 {
-                    float globalX = worldOffset.x * chunkSize + x + Config.seedOffsetX;
-                    float globalZ = worldOffset.y * chunkSize + z + Config.seedOffsetZ;
-
-                    float continentalness = NoiseUtils.FBm(globalX, globalZ, octaves / 2, densityScale / 4);
-                    float baseHeight = NoiseUtils.FBm(globalX, globalZ, octaves, densityScale);
-                    float detail = NoiseUtils.FBm(globalX, globalZ, (octaves / 2) * 3, densityScale * 5);
-
-                    float h = Mathf.Lerp(seaLevel, maxSolidHeight,
-                    continentalness * baseHeight)
-                    + detail * detailAmplitude;
-
-
-                    float d = NoiseUtils.Perlin3D(
-                        (worldOffset.x * chunkSize + x) * densityScale,
-                        y * densityScale,
-                        (worldOffset.y * chunkSize + z) * densityScale);
-                    if ((h - y) + d > 0f)
+                    float d = NoiseUtils.Perlin3D(globalX * densityScale, y * densityScale, globalZ * densityScale);
+                    if ((h - y) + d * b_detailWeight > 0f)
                     {
                         surfaceHeight[x, z] = y;
                         break;
@@ -165,7 +194,7 @@ public class Chunk : MonoBehaviour
      * Utiliza ruído Perlin aliado à profundidade da superfície para gerar transições geológicas naturais e irregulares.
      * * @param surfaceHeight: Matriz 2D com a altura da superfície por coluna, usada para calcular a profundidade.
      */
-    private void CreateInitialChunkData(int[,] surfaceHeight)
+    private void CreateInitialChunkData(int[,] surfaceHeight, Biome[,] columnBiomes)
     {
         for (int x = 0; x < chunkSize; x++)
         {
@@ -173,13 +202,20 @@ public class Chunk : MonoBehaviour
             {
                 float globalX = worldOffset.x * chunkSize + x + Config.seedOffsetX;
                 float globalZ = worldOffset.y * chunkSize + z + Config.seedOffsetZ;
+                Biome currentBiome = columnBiomes[x, z];
+
+                GetBlendedTerrain(globalX, globalZ, out float b_scale, out int b_octaves, out float b_maxSolidHeight, out float b_detailWeight);
+
+                float continentalness = NoiseUtils.FBm(globalX, globalZ, b_octaves / 2, densityScale / 4);
+                float baseHeight = NoiseUtils.FBm(globalX, globalZ, b_octaves, densityScale);
+                float detail = NoiseUtils.FBm(globalX, globalZ, (b_octaves / 2) * 3, densityScale * 5);
+                float h = Mathf.Lerp(seaLevel, b_maxSolidHeight, continentalness * baseHeight) + detail * detailAmplitude;
 
                 for (int y = 0; y < chunkHeight; y++)
                 {
                     // Cálculo da densidade do bloco atual
-                    float heightNoise = NoiseUtils.FBm(globalX, globalZ, octaves, scale) * chunkHeight;
                     float densityNoise = NoiseUtils.Perlin3D(globalX * densityScale, y * densityScale, globalZ * densityScale);
-                    float finalDensity = (heightNoise - y) + densityNoise * detailWeight;
+                    float finalDensity = (h - y) + densityNoise * b_detailWeight;
                     bool solid = finalDensity > 0f;
 
                     // Escavação de cavernas por threshold
@@ -195,7 +231,7 @@ public class Chunk : MonoBehaviour
 
                     // Cálculo corrigido da densidade do bloco acima para determinar com precisão se é superfície real
                     float densityNoiseAbove = NoiseUtils.Perlin3D(globalX * densityScale, (y + 1) * densityScale, globalZ * densityScale);
-                    float finalDensityAbove = (heightNoise - (y + 1)) + densityNoiseAbove * detailWeight;
+                    float finalDensityAbove = (h - (y + 1)) + densityNoiseAbove * b_detailWeight;
                     bool surfaceBlock = finalDensityAbove <= 0f;
 
                     // --- LÓGICA DE 'CAMADAS ORGÂNICAS' ---
@@ -219,7 +255,7 @@ public class Chunk : MonoBehaviour
                         // Camada muito profunda
                         type = Block.BlockType.COBBLESTONE;
                     }
-                    else if (depthFromSurface > 0 + (layerNoise * 0.3f))
+                    else if (depthFromSurface > 4 + layerNoise)
                     {
                         // Debaixo da terra
                         type = Block.BlockType.STONE;
@@ -227,14 +263,14 @@ public class Chunk : MonoBehaviour
                     else
                     {
                         // Camada superficial padrão
-                        type = Block.BlockType.DIRT;
+                        type = currentBiome.subSurfaceBlock;
                     }
 
                     // --- MUTAÇÃO AMBIENTAL ---
-                    // Se o bloco gerado for terra e a posição acima não for sólida (superfície), sofre mutação para relva
-                    if (type == Block.BlockType.DIRT && surfaceBlock)
+                    // Se o bloco gerado for terra/areia e a posição acima não for sólida (superfície), sofre mutação
+                    if ((type == Block.BlockType.DIRT || type == Block.BlockType.SAND) && surfaceBlock)
                     {
-                        type = Block.BlockType.GRASS;
+                        type = currentBiome.surfaceBlock;
                     }
 
                     chunkData[x, y, z] = new Block(type, new Vector3(x, y, z)); //
@@ -289,21 +325,22 @@ public class Chunk : MonoBehaviour
     /**
      * Percorre o chunk após a escavação de grutas e transforma blocos de DIRT recém-expostos em GRASS.
      */
-    private void UpdateExposedDirt()
+    private void UpdateExposedDirt(Biome[,] columnBiomes)
     {
         for (int x = 0; x < chunkSize; x++)
         {
             for (int z = 0; z < chunkSize; z++)
             {
+                Biome currentBiome = columnBiomes[x, z];
                 for (int y = 0; y < chunkHeight; y++)
                 {
-                    // Apenas nos preocupamos com blocos que são DIRT
-                    if (chunkData[x, y, z].type == Block.BlockType.DIRT)
+                    // Apenas nos preocupamos com blocos que são DIRT ou SAND
+                    if (chunkData[x, y, z].type == Block.BlockType.DIRT || chunkData[x, y, z].type == Block.BlockType.SAND)
                     {
                         // Se o bloco imediatamente acima for ar (porque foi escavado ou já o era), sofre mutação
                         if (y < chunkHeight - 1 && chunkData[x, y + 1, z].type == Block.BlockType.AIR)
                         {
-                            chunkData[x, y, z].type = Block.BlockType.GRASS;
+                            chunkData[x, y, z].type = currentBiome.surfaceBlock;
                         }
                     }
                 }

@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections.Generic;
 
 /**
@@ -12,7 +12,7 @@ public class Block
     public enum CubeFace { Front, Back, Top, Bottom, Left, Right }
 
     /* Enumeracao dos tipos de bloco disponiveis, definindo a textura e dando confirmacao de existencia. */
-    public enum BlockType { GRASS, DIRT, STONE, COBBLESTONE, BEDROCK, WATER, AIR, WOOD, LEAVES, SHORT_GRASS, FLOWER, HIVE }
+    public enum BlockType { GRASS, DIRT, STONE, COBBLESTONE, BEDROCK, WATER, AIR, WOOD, LEAVES, SHORT_GRASS, FLOWER, HIVE, SAND, CACTUS, SNOW, PINE_LEAVES, PINE_WOOD, JUNGLE_WOOD, JUNGLE_LEAVES, MOSS, SNOWBUSH }
 
     /* Tipo do bloco individual. */
     public BlockType type;
@@ -47,10 +47,10 @@ public class Block
         this.type = type;
         this.position = position;
 
-        isCrossMesh = (type == BlockType.SHORT_GRASS || type == BlockType.FLOWER);
+        isCrossMesh = (type == BlockType.SHORT_GRASS || type == BlockType.FLOWER || type == BlockType.SNOWBUSH);
         // Cross meshes nao sao solidas (nao tem colisao nem participam no face culling)
         isSolid = (type != BlockType.AIR && type != BlockType.WATER && !isCrossMesh);
-        isTranslucent = (type == BlockType.LEAVES || type == BlockType.HIVE); // Hive tem cantos transparentes? Vamos tratar como translucido pra garantir que nao corta coisas.
+        isTranslucent = (type == BlockType.LEAVES || type == BlockType.PINE_LEAVES || type == BlockType.JUNGLE_LEAVES || type == BlockType.HIVE); // Hive tem cantos transparentes? Vamos tratar como translucido pra garantir que nao corta coisas.
     }
 
     /**
@@ -92,20 +92,35 @@ public class Block
         loadTex("grass_side", false);
         loadTex("wood_top", false);
         loadTex("wood_side", false);
+        loadTex("sand", false);
+        loadTex("snow", false);
+        loadTex("cactus", false);
+        loadTex("grass_snow", false);
+        loadTex("wood_top_pine", false);
+        loadTex("wood_side_pine", false);
+        loadTex("wood_top_jungle", false);
+        loadTex("wood_side_jungle", false);
+        loadTex("moss", false);
+        loadTex("hive_top", false);
+        loadTex("hive_side", false);
 
         // Carregar texturas transparentes/recortadas da pasta TransparentBlocks/
         loadTex("leaves", true);
         loadTex("short_grass", true);
         loadTex("flower", true);
-        loadTex("hive_top", true);
-        loadTex("hive_side", true);
+        loadTex("leaves_pine", true);
+        loadTex("leaves_jungle", true);
+        loadTex("snowbush", true);
 
-        // Criar a textura do atlas global em alta resolucao
+        // Criar a textura do atlas global em alta resolucao SEM mipmaps.
+        // Os mipmaps causam "shadow stripes" ao longe porque misturam os pixels das bordas da textura
+        // com o padding preto adjacente no atlas.
         Texture2D runtimeAtlas = new Texture2D(2048, 2048, TextureFormat.RGBA32, false);
         runtimeAtlas.filterMode = FilterMode.Point; // Mantem o aspeto pixel-art nitido sem esborratar
+        runtimeAtlas.anisoLevel = 0; // Sem filtragem anisotrópica
 
         // O Unity junta as texturas todas aqui e retorna os sub-retangulos (coordenadas) correspondentes
-        Rect[] rects = runtimeAtlas.PackTextures(texturesToPack.ToArray(), 2, 2048);
+        Rect[] rects = runtimeAtlas.PackTextures(texturesToPack.ToArray(), 4, 2048, false);
 
         // Guardar as coordenadas UV resultantes no dicionario indexadas pelo nome do ficheiro
         for (int i = 0; i < textureKeys.Count; i++)
@@ -131,9 +146,21 @@ public class Block
                 if (face == CubeFace.Top) return "grass_top";
                 if (face == CubeFace.Bottom) return "dirt";
                 return "grass_side";
+            case BlockType.SNOW:
+                if (face == CubeFace.Top) return "snow";
+                if (face == CubeFace.Bottom) return "dirt";
+                return "grass_snow";
+            case BlockType.MOSS: return "moss";
+            case BlockType.SNOWBUSH: return "snowbush";
             case BlockType.WOOD:
                 if (face == CubeFace.Top || face == CubeFace.Bottom) return "wood_top";
                 return "wood_side";
+            case BlockType.PINE_WOOD:
+                if (face == CubeFace.Top || face == CubeFace.Bottom) return "wood_top_pine";
+                return "wood_side_pine";
+            case BlockType.JUNGLE_WOOD:
+                if (face == CubeFace.Top || face == CubeFace.Bottom) return "wood_top_jungle";
+                return "wood_side_jungle";
             case BlockType.HIVE:
                 if (face == CubeFace.Top || face == CubeFace.Bottom) return "hive_top";
                 return "hive_side";
@@ -143,8 +170,12 @@ public class Block
             case BlockType.BEDROCK: return "bedrock";
             case BlockType.WATER: return "water";
             case BlockType.LEAVES: return "leaves";
+            case BlockType.PINE_LEAVES: return "leaves_pine";
+            case BlockType.JUNGLE_LEAVES: return "leaves_jungle";
             case BlockType.SHORT_GRASS: return "short_grass";
             case BlockType.FLOWER: return "flower";
+            case BlockType.SAND: return "sand";
+            case BlockType.CACTUS: return "cactus";
             default: return "stone"; // Fallback de seguranca
         }
     }
@@ -214,7 +245,7 @@ public class Block
             triangles.Add(vertexIndex + tri[i]);
         }
 
-        if (type == BlockType.LEAVES)
+        if (type == BlockType.LEAVES || type == BlockType.PINE_LEAVES || type == BlockType.JUNGLE_LEAVES)
         {
             int backVertexIndex = vertices.Count;
             for (int i = 0; i < 4; i++)

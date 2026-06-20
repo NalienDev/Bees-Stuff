@@ -70,7 +70,7 @@ public static class TreeGenerator
      * @param worldOffset: Coordenada do chunk no mundo (em unidades de chunk).
      * @param seaLevel   : Nivel do mar atual (bloco Y abaixo do qual nao crescem arvores).
      */
-    public static void PlantTrees(Block[,,] chunkData, Vector2Int worldOffset, int seaLevel)
+    public static void PlantTrees(Block[,,] chunkData, Vector2Int worldOffset, int seaLevel, Biome[,] columnBiomes)
     {
         for (int cx = EdgeMargin; cx < chunkSize - EdgeMargin; cx += CellSize)
         {
@@ -93,18 +93,20 @@ public static class TreeGenerator
                 float globalX = worldOffset.x * chunkSize + localX + Config.seedOffsetX;
                 float globalZ = worldOffset.y * chunkSize + localZ + Config.seedOffsetZ;
 
+                Biome currentBiome = columnBiomes[localX, localZ];
+
                 // --- Condicao 3: mapa de ruido de spawn ---
                 float spawnNoise = Mathf.PerlinNoise(
                     (globalX + SEED_SPAWN) * treeNoiseScale,
                     (globalZ + SEED_SPAWN) * treeNoiseScale);
-                if (spawnNoise < treeThreshold) continue;
+                if (spawnNoise < currentBiome.treeThreshold) continue;
 
                 // --- Encontrar a altura de superficie desta coluna ---
                 int surfaceY = FindSurfaceY(chunkData, localX, localZ);
                 if (surfaceY < 0) continue;
 
-                // --- Condicao 1: bloco de superficie tem de ser GRASS ---
-                if (chunkData[localX, surfaceY, localZ].type != Block.BlockType.GRASS) continue;
+                // --- Condicao 1: bloco de superficie tem de suportar arvores ---
+                if (chunkData[localX, surfaceY, localZ].type != currentBiome.surfaceBlock) continue;
 
                 // --- Condicao 2: acima do nivel do mar ---
                 if (surfaceY <= seaLevel) continue;
@@ -136,8 +138,24 @@ public static class TreeGenerator
                 float canopyOffsetX = (offsetNoise  * 2f - 1f) * MaxCanopyOffset;
                 float canopyOffsetZ = (offsetNoise2 * 2f - 1f) * MaxCanopyOffset;
 
-                // --- Plantar a arvore ---
-                PlantTree(chunkData, localX, surfaceY, localZ, trunkHeight, canopyRadius, canopyOffsetX, canopyOffsetZ, Mathf.RoundToInt(globalX), Mathf.RoundToInt(globalZ));
+                // --- Plantar a arvore baseada no bioma ---
+                if (currentBiome.biomeType == Biome.BiomeType.DESERT)
+                {
+                    int cactusHeight = Mathf.RoundToInt(Mathf.Lerp(3, 5, heightNoise));
+                    PlantCactus(chunkData, localX, surfaceY, localZ, cactusHeight);
+                }
+                else if (currentBiome.biomeType == Biome.BiomeType.SNOW)
+                {
+                    PlantPineTree(chunkData, localX, surfaceY, localZ, trunkHeight + 2, canopyRadius, Mathf.RoundToInt(globalX), Mathf.RoundToInt(globalZ));
+                }
+                else if (currentBiome.biomeType == Biome.BiomeType.JUNGLE)
+                {
+                    PlantJungleTree(chunkData, localX, surfaceY, localZ, trunkHeight + 5, canopyRadius + 1.5f, canopyOffsetX, canopyOffsetZ, Mathf.RoundToInt(globalX), Mathf.RoundToInt(globalZ));
+                }
+                else
+                {
+                    PlantTree(chunkData, localX, surfaceY, localZ, trunkHeight, canopyRadius, canopyOffsetX, canopyOffsetZ, Mathf.RoundToInt(globalX), Mathf.RoundToInt(globalZ));
+                }
             }
         }
     }
@@ -251,6 +269,104 @@ public static class TreeGenerator
             }
         }
     }
+
+    private static void PlantPineTree(Block[,,] chunkData, int baseX, int surfaceY, int baseZ, int trunkHeight, float maxRadius, int globalX, int globalZ)
+    {
+        for (int t = 1; t <= trunkHeight; t++)
+        {
+            int y = surfaceY + t;
+            if (y < chunkHeight)
+                SetBlock(chunkData, baseX, y, baseZ, Block.BlockType.PINE_WOOD);
+        }
+
+        int startLeavesY = surfaceY + Mathf.RoundToInt(trunkHeight * 0.3f);
+        for (int y = startLeavesY; y <= surfaceY + trunkHeight + 2; y++)
+        {
+            if (y >= chunkHeight) break;
+            float progress = (float)(y - startLeavesY) / (trunkHeight + 2 - (trunkHeight * 0.3f));
+            int r = Mathf.Max(0, Mathf.RoundToInt(Mathf.Lerp(maxRadius, 0, progress)));
+            
+            for (int dx = -r; dx <= r; dx++)
+            {
+                for (int dz = -r; dz <= r; dz++)
+                {
+                    int bx = baseX + dx;
+                    int bz = baseZ + dz;
+                    if (bx < 0 || bx >= chunkSize || bz < 0 || bz >= chunkSize) continue;
+
+                    if (Mathf.Abs(dx) == r && Mathf.Abs(dz) == r && r > 1)
+                    {
+                        if (PseudoRandom(bx + globalX, bz + globalZ, y) > 0.5f) continue;
+                    }
+
+                    if (chunkData[bx, y, bz].type != Block.BlockType.PINE_WOOD && chunkData[bx, y, bz].type != Block.BlockType.WOOD)
+                    {
+                        SetBlock(chunkData, bx, y, bz, Block.BlockType.PINE_LEAVES);
+                    }
+                }
+            }
+        }
+    }
+
+    private static void PlantJungleTree(Block[,,] chunkData, int baseX, int surfaceY, int baseZ, int trunkHeight, float canopyRadius, float canopyOffX, float canopyOffZ, int globalX, int globalZ)
+    {
+        for (int t = 1; t <= trunkHeight; t++)
+        {
+            int y = surfaceY + t;
+            if (y < chunkHeight)
+                SetBlock(chunkData, baseX, y, baseZ, Block.BlockType.JUNGLE_WOOD);
+        }
+
+        float cx = baseX + canopyOffX;
+        float cy = surfaceY + trunkHeight;
+        float cz = baseZ + canopyOffZ;
+
+        int r = Mathf.CeilToInt(canopyRadius);
+        float r2 = canopyRadius * canopyRadius;
+        int rY = Mathf.Max(1, Mathf.RoundToInt(r * 0.4f));
+
+        for (int dx = -r; dx <= r; dx++)
+        {
+            for (int dy = -rY; dy <= rY; dy++)
+            {
+                for (int dz = -r; dz <= r; dz++)
+                {
+                    int bx = baseX + dx;
+                    int by = (int)(cy + dy);
+                    int bz = baseZ + dz;
+
+                    if (bx < 0 || bx >= chunkSize || by < 0 || by >= chunkHeight || bz < 0 || bz >= chunkSize)
+                        continue;
+
+                    float fdx = bx - cx;
+                    float fdy = by - cy;
+                    float fdz = bz - cz;
+
+                    float dist2 = fdx * fdx + (fdy * fdy * 4.0f) + fdz * fdz;
+                    if (dist2 > r2) continue;
+
+                    if (chunkData[bx, by, bz].type == Block.BlockType.JUNGLE_WOOD || chunkData[bx, by, bz].type == Block.BlockType.WOOD) continue;
+
+                    float fillChance = 1f - Mathf.Clamp01((dist2 / r2 - 0.4f) * 2f);
+                    float leafNoise = Mathf.PerlinNoise(bx * 0.7f + bz * 0.31f, by * 0.53f);
+                    if (leafNoise > fillChance) continue;
+
+                    SetBlock(chunkData, bx, by, bz, Block.BlockType.JUNGLE_LEAVES);
+                }
+            }
+        }
+    }
+
+    private static void PlantCactus(Block[,,] chunkData, int baseX, int surfaceY, int baseZ, int height)
+    {
+        for (int t = 1; t <= height; t++)
+        {
+            int y = surfaceY + t;
+            if (y < chunkHeight)
+                SetBlock(chunkData, baseX, y, baseZ, Block.BlockType.CACTUS);
+        }
+    }
+
 
     /**
      * Devolve o Y mais alto de um bloco solido numa coluna (x, z) do chunk.

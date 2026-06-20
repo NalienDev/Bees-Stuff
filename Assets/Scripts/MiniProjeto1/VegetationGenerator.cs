@@ -15,7 +15,7 @@ public static class VegetationGenerator
     private const float FLOWER_DENSITY_BASE = 0.01f;
     private const float FLOWER_DENSITY_FOREST = 0.15f;
 
-    public static void PlantVegetation(Block[,,] chunkData, Vector2Int worldOffset, int seaLevel)
+    public static void PlantVegetation(Block[,,] chunkData, Vector2Int worldOffset, int seaLevel, Biome[,] columnBiomes)
     {
         for (int x = 0; x < chunkSize; x++)
         {
@@ -24,8 +24,10 @@ public static class VegetationGenerator
                 int surfaceY = FindSurfaceY(chunkData, x, z);
                 if (surfaceY < 0 || surfaceY >= chunkHeight - 1) continue;
 
-                // Apenas em blocos de GRASS
-                if (chunkData[x, surfaceY, z].type != Block.BlockType.GRASS) continue;
+                Biome currentBiome = columnBiomes[x, z];
+
+                // Apenas nos blocos de superficie permitidos pelo bioma
+                if (chunkData[x, surfaceY, z].type != currentBiome.surfaceBlock) continue;
                 // Acima do nivel do mar
                 if (surfaceY <= seaLevel) continue;
 
@@ -33,16 +35,20 @@ public static class VegetationGenerator
                 float globalZ = worldOffset.y * chunkSize + z + Config.seedOffsetZ;
 
                 // 1. Avaliar se estamos numa zona de floresta (mesmo ruido base das arvores)
-                // Utilizamos a variavel SEED_SPAWN do TreeGenerator.
-                // Como e privada, vamos recriar a logica com a mesma seed: 3713.5f
                 float forestNoise = Mathf.PerlinNoise(
                     (globalX + 3713.5f) * TreeGenerator.treeNoiseScale,
                     (globalZ + 3713.5f) * TreeGenerator.treeNoiseScale);
                 
-                bool isForest = forestNoise >= TreeGenerator.treeThreshold;
+                bool isForest = forestNoise >= currentBiome.treeThreshold;
 
-                float grassProb = isForest ? GRASS_DENSITY_FOREST : GRASS_DENSITY_BASE;
-                float flowerProb = isForest ? FLOWER_DENSITY_FOREST : FLOWER_DENSITY_BASE;
+                float grassProb = currentBiome.grassDensity;
+                float flowerProb = currentBiome.flowerDensity;
+
+                if (isForest)
+                {
+                    grassProb *= 2.5f;
+                    flowerProb *= 5.0f;
+                }
 
                 // Modulamos a probabilidade com um ruido de alta frequencia para clumping natural
                 float clumpNoise = Mathf.PerlinNoise(globalX * 0.2f, globalZ * 0.2f);
@@ -58,7 +64,8 @@ public static class VegetationGenerator
                 }
                 else if (rand < grassProb + flowerProb)
                 {
-                    chunkData[x, surfaceY + 1, z] = new Block(Block.BlockType.SHORT_GRASS, new Vector3(x, surfaceY + 1, z));
+                    Block.BlockType vegetationType = currentBiome.biomeType == Biome.BiomeType.SNOW ? Block.BlockType.SNOWBUSH : Block.BlockType.SHORT_GRASS;
+                    chunkData[x, surfaceY + 1, z] = new Block(vegetationType, new Vector3(x, surfaceY + 1, z));
                 }
             }
         }
