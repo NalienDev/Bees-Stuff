@@ -6,7 +6,7 @@ public class AudioPitchDetection : MonoBehaviour
     [Header("Microfone")]
     public int sampleWindow = 1024;
 
-    [Header("Range de assobío")]
+    [Header("Range de assobio")]
     public float minWhistleFreq = 1000f;
     public float maxWhistleFreq = 5000f;
 

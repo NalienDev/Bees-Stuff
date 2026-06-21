@@ -6,7 +6,7 @@ public class WhistleCameraShake : MonoBehaviour
     [Header("Camera")]
     public CinemachineVirtualCamera targetVCam;
 
-    [Header("Definições do agitar")]
+    [Header("Definicoes do agitar")]
     public float amplitudeGain = 1.5f;
     public float frequencyGain = 1.5f;
     public float fadeSpeed = 8f;

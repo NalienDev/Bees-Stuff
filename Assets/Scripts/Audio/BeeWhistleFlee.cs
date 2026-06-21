@@ -4,7 +4,7 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody))]
 public class BeeWhistleFlee : MonoBehaviour
 {
-    [Header("Deteção")]
+    [Header("Detecao")]
     public float detectionRadius = 8f;
 
     [Header("Fugir")]

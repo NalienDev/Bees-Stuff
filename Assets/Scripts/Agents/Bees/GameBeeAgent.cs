@@ -22,14 +22,10 @@ public class GameBeeAgent : Agent
     public GameObject hungerBar;
     public bool billboardUI = true;
 
-    [Header("Visual Smoothing")]
-    [Tooltip("How quickly the visual model catches up to the real position. Higher = snappier.")]
-    public float visualSmoothSpeed = 8f;
-    [Tooltip("How quickly the visual model's rotation catches up. Higher = snappier.")]
-    public float visualRotationSmoothSpeed = 10f;
+    private float visualSmoothSpeed = 8f;
+    private float visualRotationSmoothSpeed = 10f;
 
-    [Header("Hive Proximity Visibility")]
-    [Tooltip("When the bee is closer than this distance to its hive, visuals are hidden.")]
+    [Header("Proximidade da colmeia")]
     public float hiveHideRadius = 2f;
 
     [Header("Voo")]
