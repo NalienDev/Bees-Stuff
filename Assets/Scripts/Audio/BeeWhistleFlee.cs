@@ -4,17 +4,14 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody))]
 public class BeeWhistleFlee : MonoBehaviour
 {
-    [Header("Detection")]
-    [Tooltip("The bee only reacts if the whistle source is within this distance")]
+    [Header("Deteção")]
     public float detectionRadius = 8f;
 
-    [Header("Flee")]
-    [Tooltip("Angle above the whistler's forward direction the bee flees towards, in degrees")]
+    [Header("Fugir")]
     public float fleeAngle = 45f;
     public float fleeSpeed = 10f;
 
-    [Header("Shrink")]
-    [Tooltip("How long to wait after fleeing starts before the shrink begins")]
+    [Header("Diminuir")]
     public float shrinkDelay = 1f;
     public float shrinkDuration = 1.5f;
 

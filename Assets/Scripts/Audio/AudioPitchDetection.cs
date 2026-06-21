@@ -3,22 +3,21 @@ using UnityEngine;
 
 public class AudioPitchDetection : MonoBehaviour
 {
-    [Header("Microphone")]
+    [Header("Microfone")]
     public int sampleWindow = 1024;
 
-    [Header("Whistle range (Hz)")]
+    [Header("Range de assobío")]
     public float minWhistleFreq = 1000f;
     public float maxWhistleFreq = 5000f;
 
-    [Header("Noise gate")]
+    [Header("Minimo loudness")]
     public float minRms = 0.02f;
 
-    [Header("Pitch search range (Hz)")]
+    [Header("Range de procura de pitch")]
     public float minDetectableFreq = 300f;
     public float maxDetectableFreq = 8000f;
 
-    [Header("Stability")]
-    [Tooltip("Consecutive frames a state must hold before the event fires, to avoid flicker on noisy input")]
+    [Header("Estabilidade")]
     public int requiredConsecutiveFrames = 3;
 
     public static event Action<Transform> onWhistleDetected;

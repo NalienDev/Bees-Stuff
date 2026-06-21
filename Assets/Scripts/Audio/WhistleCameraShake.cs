@@ -3,42 +3,17 @@ using Cinemachine;
 
 public class WhistleCameraShake : MonoBehaviour
 {
-    [Header("Target")]
-    [Tooltip("The virtual camera to shake. Leave empty to auto-find one in the scene.")]
+    [Header("Camera")]
     public CinemachineVirtualCamera targetVCam;
 
-    [Header("Shake settings")]
+    [Header("Definições do agitar")]
     public float amplitudeGain = 1.5f;
     public float frequencyGain = 1.5f;
-    [Tooltip("How fast the shake ramps in/out (higher = snappier)")]
     public float fadeSpeed = 8f;
 
     private CinemachineBasicMultiChannelPerlin perlin;
     private float currentStrength;
     private float targetStrength;
-
-    private void Awake()
-    {
-        if (targetVCam == null)
-        {
-            targetVCam = FindFirstObjectByType<CinemachineVirtualCamera>();
-        }
-
-        if (targetVCam != null)
-        {
-            perlin = targetVCam.GetCinemachineComponent<CinemachineBasicMultiChannelPerlin>();
-            if (perlin == null)
-            {
-                Debug.LogWarning("WhistleCameraShake: no CinemachineBasicMultiChannelPerlin found on "
-                    + targetVCam.name + ". Add Extension > CinemachineBasicMultiChannelPerlin "
-                    + "and assign a Noise Profile in its inspector.");
-            }
-        }
-        else
-        {
-            Debug.LogWarning("WhistleCameraShake: no CinemachineVirtualCamera found/assigned.");
-        }
-    }
 
     private void OnEnable()
     {
