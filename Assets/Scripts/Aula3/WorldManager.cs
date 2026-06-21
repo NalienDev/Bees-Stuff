@@ -82,7 +82,10 @@ public class WorldManager : MonoBehaviour
             lastPlayerChunk = current;
             // Cancelar a coroutine anterior (se ainda estiver a correr)
             if (buildRoutine != null)
+            {
                 StopCoroutine(buildRoutine);
+                CleanIncompleteChunks();
+            }
             // Remover chunks fora do range (isto continua sÃ­ncrono)
             RemoveDistantChunks(current);
 
@@ -163,6 +166,42 @@ public class WorldManager : MonoBehaviour
 
             Destroy(sleepingChunks[key]);
             sleepingChunks.Remove(key);
+        }
+    }
+
+    /**
+     * Remove e destrói chunks que começaram a ser gerados mas cujo processo foi cancelado a meio.
+     * Isto previne que fiquem registados em activeChunks sem mesh ou colisor atribuídos.
+     */
+    private void CleanIncompleteChunks()
+    {
+        List<Vector2Int> toRemove = new List<Vector2Int>();
+        foreach (var kvp in activeChunks)
+        {
+            if (kvp.Value != null)
+            {
+                Chunk chunk = kvp.Value.GetComponent<Chunk>();
+                if (chunk == null || !chunk.isFullyBuilt)
+                {
+                    toRemove.Add(kvp.Key);
+                }
+            }
+            else
+            {
+                toRemove.Add(kvp.Key);
+            }
+        }
+
+        foreach (var key in toRemove)
+        {
+            GameObject chunkObj = activeChunks[key];
+            if (chunkObj != null)
+            {
+                if (WorldBeeManager.Instance != null)
+                    WorldBeeManager.Instance.OnChunkRemoved(key);
+                Destroy(chunkObj);
+            }
+            activeChunks.Remove(key);
         }
     }
 
@@ -294,6 +333,7 @@ public class WorldManager : MonoBehaviour
             {
                 chunk.BuildCollisionMesh();
                 chunk.DrawChunk();
+                chunk.isFullyBuilt = true;
 
                 if (WorldBeeManager.Instance != null)
                     WorldBeeManager.Instance.OnChunkGenerated(chunk);

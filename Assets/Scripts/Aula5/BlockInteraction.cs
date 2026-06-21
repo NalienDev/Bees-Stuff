@@ -157,7 +157,25 @@ public class BlockInteraction : MonoBehaviour
             Camera.main.transform.forward);
         // ir para a frente meio bloco para obter a posição correta deste (o hit.pos esta na superficie entre dois blocos)
         if (Physics.Raycast(ray, out RaycastHit hit, maxDistance))
-            ModifyBlock(hit.point + hit.normal * 0.5f, placeType);
+        {
+            Vector3 targetPos = hit.point + hit.normal * 0.5f;
+            int tx = Mathf.RoundToInt(targetPos.x);
+            int ty = Mathf.RoundToInt(targetPos.y);
+            int tz = Mathf.RoundToInt(targetPos.z);
+
+            // Verificar se o bloco alvo colide com o espaço ocupado pelo jogador
+            CharacterController cc = GetComponent<CharacterController>();
+            if (cc != null)
+            {
+                Bounds playerBounds = cc.bounds;
+                // Bounding box do bloco alvo (cubo unitário centrado na posição inteira)
+                Bounds blockBounds = new Bounds(new Vector3(tx, ty, tz), Vector3.one);
+                if (playerBounds.Intersects(blockBounds))
+                    return;
+            }
+
+            ModifyBlock(targetPos, placeType);
+        }
     }
 
     /**
