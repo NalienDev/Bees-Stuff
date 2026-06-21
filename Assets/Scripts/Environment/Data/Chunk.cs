@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using static Config;
 
@@ -195,7 +195,7 @@ public class Chunk : MonoBehaviour
                     bool solid = finalDensity > 0f;
 
 
-                    if (solid && y > 1 && y < maxSurfaceHeight - margin)
+                    if (solid && y > 1 && y < maxSurfaceHeight - margin && currentBiome.allowCaves)
                     {
                         float cx = globalX * caveScale;
                         float cy = y * caveScale;
@@ -302,11 +302,16 @@ public class Chunk : MonoBehaviour
                 Biome currentBiome = columnBiomes[x, z];
                 for (int y = 0; y < chunkHeight; y++)
                 {
-
-                    if (chunkData[x, y, z].type == Block.BlockType.DIRT || chunkData[x, y, z].type == Block.BlockType.SAND)
+                    Block.BlockType bt = chunkData[x, y, z].type;
+                    if (bt == Block.BlockType.DIRT || bt == Block.BlockType.SAND)
                     {
+                        bool exposedTop   = y < chunkHeight - 1 && chunkData[x, y + 1, z].type == Block.BlockType.AIR;
+                        bool exposedFront = z < chunkSize - 1   && chunkData[x, y, z + 1].type == Block.BlockType.AIR;
+                        bool exposedBack  = z > 0               && chunkData[x, y, z - 1].type == Block.BlockType.AIR;
+                        bool exposedRight = x < chunkSize - 1   && chunkData[x + 1, y, z].type == Block.BlockType.AIR;
+                        bool exposedLeft  = x > 0               && chunkData[x - 1, y, z].type == Block.BlockType.AIR;
 
-                        if (y < chunkHeight - 1 && chunkData[x, y + 1, z].type == Block.BlockType.AIR)
+                        if (exposedTop || exposedFront || exposedBack || exposedRight || exposedLeft)
                         {
                             chunkData[x, y, z].type = currentBiome.surfaceBlock;
                         }

@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 public class Biome
 {
@@ -21,8 +21,9 @@ public class Biome
     public float treeThreshold;
     public float grassDensity;
     public float flowerDensity;
+    public bool allowCaves;
 
-    public Biome(string name, BiomeType biomeType, float scale, int octaves, int maxSolidHeight, float detailWeight, Block.BlockType surface, Block.BlockType subSurface, float treeThreshold, float grassDensity, float flowerDensity)
+    public Biome(string name, BiomeType biomeType, float scale, int octaves, int maxSolidHeight, float detailWeight, Block.BlockType surface, Block.BlockType subSurface, float treeThreshold, float grassDensity, float flowerDensity, bool allowCaves)
     {
         this.name = name;
         this.biomeType = biomeType;
@@ -35,5 +36,6 @@ public class Biome
         this.treeThreshold = treeThreshold;
         this.grassDensity = grassDensity;
         this.flowerDensity = flowerDensity;
+        this.allowCaves = allowCaves;
     }
 }

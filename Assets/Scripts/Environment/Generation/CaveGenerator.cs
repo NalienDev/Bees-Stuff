@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 
 public static class CaveGenerator
@@ -34,13 +34,13 @@ public static class CaveGenerator
     {
         for (int i = 0; i < wormsPerChunk; i++)
         {
-
             System.Random rng = new System.Random(Config.seedOffsetHash + worldOffset.x * 1234 + worldOffset.y * 5678);
-
 
             float globalStartX = worldOffset.x * chunkSize + (float)(rng.NextDouble() * chunkSize);
             float globalStartZ = worldOffset.y * chunkSize + (float)(rng.NextDouble() * chunkSize);
             float globalStartY = (float)(rng.NextDouble() * (chunkHeight * 0.5f - 5f)) + 5f;
+
+            if (!BiomeManager.GetBiomeAt(globalStartX, globalStartZ).allowCaves) continue;
 
             Vector3 wormStart = new Vector3(globalStartX, globalStartY, globalStartZ);
             CarveWorm(chunkData, chunkSize, chunkHeight, worldOffset, wormStart, steps, radius, stepSize, directionScale);
@@ -66,6 +66,8 @@ public static class CaveGenerator
             float nz = NoiseUtils.Perlin3D(gz + 200f, gx + 200f, gy + 200f) * 2f - 1f;
             Vector3 dir = new Vector3(nx, ny * 0.5f, nz).normalized;
             pos += dir * stepSize;
+
+            if (!BiomeManager.GetBiomeAt(pos.x, pos.z).allowCaves) continue;
 
             CarveAt(chunkData, chunkSize, chunkHeight, worldOffset, pos, radius);
         }
