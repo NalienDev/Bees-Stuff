@@ -68,7 +68,7 @@ public class GameBeeAgent : Agent
     private Vector3 smoothVisualPosition;
     private Quaternion smoothVisualRotation;
     private bool beeModelIsChild = true;
-    private bool visualsHidden;
+    [HideInInspector] public bool visualsHidden;
     private float reappearCooldown;
     private const float ReappearDelay = 1f;
 
@@ -84,8 +84,6 @@ public class GameBeeAgent : Agent
         if (beeModel == null) beeModel = transform;
         beeRenderers = beeModel.GetComponentsInChildren<SkinnedMeshRenderer>();
 
-
-
         beeModelIsChild = (beeModel != transform && beeModel.parent == transform);
         if (beeModelIsChild)
         {
@@ -94,7 +92,6 @@ public class GameBeeAgent : Agent
 
         smoothVisualPosition = transform.position;
         smoothVisualRotation = beeModel.rotation;
-
 
         int beeLayer = LayerMask.NameToLayer("Bee");
         int leavesLayer = LayerMask.NameToLayer("Leaves");
@@ -121,7 +118,6 @@ public class GameBeeAgent : Agent
         lastPosition = transform.position;
         stuckTimer = 0f;
 
-
         smoothVisualPosition = transform.position;
         smoothVisualRotation = beeModel != null ? beeModel.rotation : transform.rotation;
     }
@@ -140,13 +136,9 @@ public class GameBeeAgent : Agent
         {
             smoothVisualPosition = Vector3.Lerp(smoothVisualPosition, transform.position, Time.deltaTime * visualSmoothSpeed);
             beeModel.position = smoothVisualPosition;
-
-
-
             smoothVisualRotation = Quaternion.Slerp(smoothVisualRotation, beeModel.rotation, Time.deltaTime * visualRotationSmoothSpeed);
 
         }
-
 
         if (hiveTransform != null)
         {
@@ -155,7 +147,6 @@ public class GameBeeAgent : Agent
 
             if (shouldHide && !visualsHidden)
             {
-
                 visualsHidden = true;
                 reappearCooldown = 0f;
                 SetVisualsActive(false);
@@ -172,7 +163,6 @@ public class GameBeeAgent : Agent
                 }
             }
         }
-
 
         if (hungerBar != null)
         {
@@ -193,9 +183,6 @@ public class GameBeeAgent : Agent
             }
         }
     }
-
-
-
 
     private void SetVisualsActive(bool active)
     {
@@ -405,7 +392,6 @@ public class GameBeeAgent : Agent
 
     private void OnDestroy()
     {
-
         if (beeModelIsChild && beeModel != null)
             Destroy(beeModel.gameObject);
     }
@@ -414,9 +400,6 @@ public class GameBeeAgent : Agent
 
     private Vector3 ClampAltitude(Vector3 worldPos)
     {
-
-
-
         Vector3 rayOrigin = new Vector3(worldPos.x, worldPos.y + 0.5f, worldPos.z);
         if (Physics.Raycast(rayOrigin, Vector3.down, out RaycastHit hit, groundSenseDistance, terrainLayerMask))
         {
