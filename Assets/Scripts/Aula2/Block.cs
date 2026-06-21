@@ -119,13 +119,16 @@ public class Block
         loadTex("leaves_jungle", true);
         loadTex("snowbush", true);
 
-        // Criar a textura do atlas global em alta resolucao SEM mipmaps para evitar bleeding
-        Texture2D runtimeAtlas = new Texture2D(2048, 2048, TextureFormat.RGBA32, false);
+        // Criar a textura do atlas global em alta resolucao COM mipmaps
+        Texture2D runtimeAtlas = new Texture2D(2048, 2048, TextureFormat.RGBA32, true);
         runtimeAtlas.filterMode = FilterMode.Point; // Mantem o aspeto pixel-art nitido sem esborratar
         runtimeAtlas.anisoLevel = 1;
 
         // O Unity junta as texturas todas aqui e retorna os sub-retangulos (coordenadas) correspondentes
         Rect[] rects = runtimeAtlas.PackTextures(texturesToPack.ToArray(), 4, 2048, false);
+
+        // Dilatar as margens das texturas para impedir bleeding quando o mipmapping é gerado
+        DilateEdges(runtimeAtlas, rects);
 
         // Guardar as coordenadas UV resultantes no dicionario indexadas pelo nome do ficheiro
         for (int i = 0; i < textureKeys.Count; i++)
@@ -201,14 +204,79 @@ public class Block
         Rect rect = textureUVs.ContainsKey(key) ? textureUVs[key] : new Rect(0, 0, 1, 1);
 
         // Mapeia os 4 cantos do sub-rectangulo do atlas retornado pelo PackTextures
-        // Adicionamos um pequeno recuo (inset) para evitar texture bleeding nas margens
-        float inset = 0.0002f;
+        // Recuo (inset) critico para evitar sangramento ao usar mipmaps
+        float inset = 0.0005f; 
         Vector2 uv00 = new Vector2(rect.xMin + inset, rect.yMin + inset);
         Vector2 uv10 = new Vector2(rect.xMax - inset, rect.yMin + inset);
         Vector2 uv01 = new Vector2(rect.xMin + inset, rect.yMax - inset);
         Vector2 uv11 = new Vector2(rect.xMax - inset, rect.yMax - inset);
 
         return new[] { uv11, uv01, uv00, uv10 };
+    }
+
+    /**
+     * Dilata (estica) as extremidades de cada sub-textura do atlas para os pixeis de padding vizinhos.
+     * Isto é estritamente necessário porque, com mipmaps ativados, a redução de escala mistura
+     * as margens da textura com o padding transparente ao lado, criando listas invisíveis.
+     */
+    private static void DilateEdges(Texture2D atlas, Rect[] rects)
+    {
+        Color32[] pixels = atlas.GetPixels32();
+        int width = atlas.width;
+        int height = atlas.height;
+
+        foreach (Rect r in rects)
+        {
+            int rx = Mathf.RoundToInt(r.xMin * width);
+            int ry = Mathf.RoundToInt(r.yMin * height);
+            int rw = Mathf.RoundToInt(r.width * width);
+            int rh = Mathf.RoundToInt(r.height * height);
+
+            // Left padding
+            for (int p = 1; p <= 2; p++)
+            {
+                if (rx - p < 0) continue;
+                for (int y = 0; y < rh; y++)
+                    pixels[(ry + y) * width + (rx - p)] = pixels[(ry + y) * width + rx];
+            }
+
+            // Right padding
+            for (int p = 1; p <= 2; p++)
+            {
+                if (rx + rw - 1 + p >= width) continue;
+                for (int y = 0; y < rh; y++)
+                    pixels[(ry + y) * width + (rx + rw - 1 + p)] = pixels[(ry + y) * width + (rx + rw - 1)];
+            }
+
+            // Top padding
+            for (int p = 1; p <= 2; p++)
+            {
+                if (ry + rh - 1 + p >= height) continue;
+                for (int x = -2; x < rw + 2; x++)
+                {
+                    int px = Mathf.Clamp(rx + x, rx, rx + rw - 1);
+                    int writeX = Mathf.Clamp(rx + x, 0, width - 1);
+                    pixels[(ry + rh - 1 + p) * width + writeX] = pixels[(ry + rh - 1) * width + px];
+                }
+            }
+
+            // Bottom padding
+            for (int p = 1; p <= 2; p++)
+            {
+                if (ry - p < 0) continue;
+                for (int x = -2; x < rw + 2; x++)
+                {
+                    int px = Mathf.Clamp(rx + x, rx, rx + rw - 1);
+                    int writeX = Mathf.Clamp(rx + x, 0, width - 1);
+                    pixels[(ry - p) * width + writeX] = pixels[ry * width + px];
+                }
+            }
+        }
+
+        atlas.SetPixels32(pixels);
+        // O false não desativa os mipmaps, apenas evita recalcular mipmaps vazios ANTES do Apply terminar.
+        // Como criámos a textura com mipmaps = true, o Apply(true) recalcula-os corretamente com as margens dilatadas.
+        atlas.Apply(true);
     }
 
     /**
