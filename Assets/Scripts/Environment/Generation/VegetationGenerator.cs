@@ -1,17 +1,12 @@
-using UnityEngine;
+﻿using UnityEngine;
 using static Config;
 
-/**
- * Gerador procedural de vegetacao (relva alta e flores).
- * Acoplado ao ruido de floresta (TreeGenerator) para garantir que
- * a vegetacao e mais densa perto das arvores, providenciando flores
- * para as abelhas locais.
- */
+
 public static class VegetationGenerator
 {
     private const float GRASS_DENSITY_BASE = 0.3f;
     private const float GRASS_DENSITY_FOREST = 0.8f;
-    
+
     private const float FLOWER_DENSITY_BASE = 0.01f;
     private const float FLOWER_DENSITY_FOREST = 0.15f;
 
@@ -26,19 +21,19 @@ public static class VegetationGenerator
 
                 Biome currentBiome = columnBiomes[x, z];
 
-                // Apenas nos blocos de superficie permitidos pelo bioma
+
                 if (chunkData[x, surfaceY, z].type != currentBiome.surfaceBlock) continue;
-                // Acima do nivel do mar
+
                 if (surfaceY <= seaLevel) continue;
 
                 float globalX = worldOffset.x * chunkSize + x + Config.seedOffsetX;
                 float globalZ = worldOffset.y * chunkSize + z + Config.seedOffsetZ;
 
-                // 1. Avaliar se estamos numa zona de floresta (mesmo ruido base das arvores)
+
                 float forestNoise = Mathf.PerlinNoise(
                     (globalX + 3713.5f) * TreeGenerator.treeNoiseScale,
                     (globalZ + 3713.5f) * TreeGenerator.treeNoiseScale);
-                
+
                 bool isForest = forestNoise >= currentBiome.treeThreshold;
 
                 float grassProb = currentBiome.grassDensity;
@@ -50,12 +45,12 @@ public static class VegetationGenerator
                     flowerProb *= 5.0f;
                 }
 
-                // Modulamos a probabilidade com um ruido de alta frequencia para clumping natural
+
                 float clumpNoise = Mathf.PerlinNoise(globalX * 0.2f, globalZ * 0.2f);
                 grassProb *= clumpNoise;
                 flowerProb *= clumpNoise;
 
-                // Gerar um numero pseudo-aleatorio para decidir o spawn
+
                 float rand = PseudoRandom(Mathf.RoundToInt(globalX), Mathf.RoundToInt(globalZ));
 
                 if (rand < flowerProb)

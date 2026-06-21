@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using Unity.MLAgents;
 using Unity.MLAgents.Sensors;
 using Unity.MLAgents.Actuators;
@@ -27,13 +27,13 @@ public class BeeAgent : Agent
     public float rotationSpeed = 1f;
 
     [Header("Parametros de Voo")]
-    /** Camadas consideradas "terreno" para efeitos de altura e colisão. */
+
     public LayerMask terrainLayerMask;
-    /** Altura mínima que a abelha mantém acima do terreno por baixo de si. */
+
     public float minHoverHeight = 0.5f;
-    /** Altura máxima permitida acima do terreno por baixo de si. */
+
     public float maxFlightHeight = 12f;
-    /** Distância máxima usada para "sentir" o solo/teto por raycast. */
+
     public float groundSenseDistance = 40f;
 
     [Header("Parametros de Fome")]
@@ -65,7 +65,7 @@ public class BeeAgent : Agent
         rb = GetComponent<Rigidbody>();
         if (rb == null)
         {
-            Debug.LogWarning($"{gameObject.name}: BeeAgent precisa de um Rigidbody para voar com colisão de terreno.");
+            Debug.LogWarning($"{gameObject.name}: BeeAgent precisa de um Rigidbody para voar com colisï¿½o de terreno.");
         }
         else
         {
@@ -90,8 +90,8 @@ public class BeeAgent : Agent
     {
         if (rb == null) return;
 
-        // Hard cap on velocity - prevents any physics impulse from
-        // sending the bee flying at uncontrolled speeds
+
+
         if (rb.linearVelocity.magnitude > moveSpeed)
         {
             rb.linearVelocity = rb.linearVelocity.normalized * moveSpeed;
@@ -142,41 +142,41 @@ public class BeeAgent : Agent
 
     public override void CollectObservations(VectorSensor sensor)
     {
-        sensor.AddObservation(finished ? 1f : 0f); // 1
-        sensor.AddObservation(hunger / maxHunger);  // 1
-        sensor.AddObservation(hasPollen ? 1f : 0f); // 1
+        sensor.AddObservation(finished ? 1f : 0f);
+        sensor.AddObservation(hunger / maxHunger);
+        sensor.AddObservation(hasPollen ? 1f : 0f);
 
         float honeyRatio = 0f;
         if (hiveManager != null)
             honeyRatio = Mathf.Clamp01(hiveManager.HoneyStored / 5f);
-        sensor.AddObservation(honeyRatio); // 1
+        sensor.AddObservation(honeyRatio);
 
         if (nearestFlower != null && !finished)
         {
             Vector3 dirFlower = (nearestFlower.transform.position - transform.position).normalized;
             float distFlower = Vector3.Distance(nearestFlower.transform.position, transform.position) / 20f;
-            sensor.AddObservation(dirFlower);   // 3
-            sensor.AddObservation(distFlower);  // 1
-            sensor.AddObservation(nearestFlower.IsCharged ? 1f : 0f); // 1
+            sensor.AddObservation(dirFlower);
+            sensor.AddObservation(distFlower);
+            sensor.AddObservation(nearestFlower.IsCharged ? 1f : 0f);
         }
         else
         {
-            sensor.AddObservation(Vector3.zero); // 3
-            sensor.AddObservation(0f);           // 1
-            sensor.AddObservation(0f);           // 1
+            sensor.AddObservation(Vector3.zero);
+            sensor.AddObservation(0f);
+            sensor.AddObservation(0f);
         }
 
-        sensor.AddObservation(hasPollen ? 1f : 0f); // 1
+        sensor.AddObservation(hasPollen ? 1f : 0f);
 
         Vector3 dirHive = (hiveTransform.position - transform.position).normalized;
         float distHive = Vector3.Distance(hiveTransform.position, transform.position) / 20f;
-        sensor.AddObservation(dirHive);   // 3
-        sensor.AddObservation(distHive);  // 1
-        sensor.AddObservation(pollinationTimer / pollinationThreshold); // 1
+        sensor.AddObservation(dirHive);
+        sensor.AddObservation(distHive);
+        sensor.AddObservation(pollinationTimer / pollinationThreshold);
 
-        sensor.AddObservation(GetGroundClearance());  // 1
-        sensor.AddObservation(GetCeilingClearance()); // 1
-        // Total: 17
+        sensor.AddObservation(GetGroundClearance());
+        sensor.AddObservation(GetCeilingClearance());
+
     }
 
     public override void OnActionReceived(ActionBuffers actions)
@@ -209,7 +209,7 @@ public class BeeAgent : Agent
         if (rb != null) rb.MovePosition(targetPos);
         else transform.position = targetPos;
 
-        // Rodar o modelo (apenas yaw) com base no movimento horizontal
+
         Vector3 horizontalDir = new Vector3(moveX, 0f, moveZ);
         if (horizontalDir.sqrMagnitude > 0.001f && beeModel != null)
         {
@@ -300,18 +300,14 @@ public class BeeAgent : Agent
     {
         var ca = actionsOut.ContinuousActions;
         ca[0] = Input.GetAxis("Horizontal");
-        ca[1] = (Input.GetKey(KeyCode.E) ? 1f : 0f) - (Input.GetKey(KeyCode.Q) ? 1f : 0f); // subir/descer
+        ca[1] = (Input.GetKey(KeyCode.E) ? 1f : 0f) - (Input.GetKey(KeyCode.Q) ? 1f : 0f);
         ca[2] = Input.GetAxis("Vertical");
 
         var da = actionsOut.DiscreteActions;
         da[0] = Input.GetKey(KeyCode.Space) ? 1 : 0;
     }
 
-    /**
-     * Mantém a posição alvo dentro de uma faixa de altura segura relativa ao terreno
-     * imediatamente abaixo. Se não houver terreno detetável (ex: sobre um abismo), 
-     * a altura não é alterada nesse frame.
-     */
+
     private Vector3 ClampAltitude(Vector3 worldPos)
     {
         Vector3 rayOrigin = new Vector3(worldPos.x, worldPos.y + groundSenseDistance, worldPos.z);

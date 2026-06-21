@@ -1,10 +1,8 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using static Config;
 
-/**
- * Classe que representa um chunk (matriz 3D) de blocos no mundo.
- */
+
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 public class Chunk : MonoBehaviour
 {
@@ -57,35 +55,22 @@ public class Chunk : MonoBehaviour
     public float directionScale = 0.05f;
 
     [Header("Cross-Chunk Culling")]
-    // Extensão D — referência ao WorldManager para cross-chunk culling
+
     public WorldManager worldManager;
 
     [System.NonSerialized]
     public bool isFullyBuilt = false;
 
-    /**
-     * Inicializa os atributos do chunk e faz o arranque da geração da matriz de blocos.
-     * 
-     * @param offset: A coordenada 2D deste chunk na grelha do mundo.
-     * @param mat: O material que será atribuído ao MeshRenderer.
-     * @param manager: Referência opcional ao WorldManager (Extensão D).
-     */
+
     public void Initialize(Vector2Int offset, Material mat, WorldManager manager = null)
     {
         worldOffset = offset;
         chunkMaterial = mat;
         worldManager = manager;
-        // geração controlada pelo WorldManager via GenerateChunkData()
+
     }
 
-    /**
-     * Preenche a matriz de blocos 'chunkData':
-     * 1. Cálculo da altura da superfície (heightmap 2D);
-     * 2. Geração da densidade 3D (densitymap 3D);
-     * 3. Escavação de cavernas (Worms - CaveGenerator.cs);
-     * 4. Colocação de água;
-     * 5. Texturização das paredes interiores das grutas.
-     */
+
     void InitializeChunk()
     {
         chunkData = new Block[chunkSize, chunkHeight, chunkSize];
@@ -94,25 +79,22 @@ public class Chunk : MonoBehaviour
 
         int[,] surfaceHeight = new int[chunkSize, chunkSize];
 
-        // 1. Calcular alturas
+
         GetColumnSurfaceHeight(surfaceHeight, columnBiomes);
-        // 2. Gerar terreno sólido com camadas base
+
         CreateInitialChunkData(surfaceHeight, columnBiomes);
-        // 3. Escavar grutas (transforma blocos em AIR)
+
         CaveGenerator.GenerateWorms(chunkData, chunkSize, chunkHeight, worldOffset, wormsPerChunk, steps, radius, stepSize, directionScale);
-        // 4. Gerar água
+
         GenerateWater();
-        // 5. Atualizar terra exposta pela escavação
+
         UpdateExposedDirt(columnBiomes);
-        // 6. Plantar árvores e vegetação
+
         TreeGenerator.PlantTrees(chunkData, worldOffset, seaLevel, columnBiomes);
         VegetationGenerator.PlantVegetation(chunkData, worldOffset, seaLevel, columnBiomes);
     }
 
-    /**
-     * Gera apenas os dados do chunk — seguro para correr fora da main thread.
-     * Não usa nenhuma API do Unity que exija a main thread.
-     */
+
     public void GenerateChunkData()
     {
         Biome[,] columnBiomes = new Biome[chunkSize, chunkSize];
@@ -149,19 +131,14 @@ public class Chunk : MonoBehaviour
         Biome b3 = BiomeManager.GetBiomeAt(globalX + 8, globalZ);
         Biome b4 = BiomeManager.GetBiomeAt(globalX, globalZ - 8);
         Biome b5 = BiomeManager.GetBiomeAt(globalX, globalZ + 8);
-        
+
         b_scale = (b1.scale + b2.scale + b3.scale + b4.scale + b5.scale) / 5f;
         b_octaves = Mathf.RoundToInt((b1.octaves + b2.octaves + b3.octaves + b4.octaves + b5.octaves) / 5f);
         b_maxSolidHeight = (b1.maxSolidHeight + b2.maxSolidHeight + b3.maxSolidHeight + b4.maxSolidHeight + b5.maxSolidHeight) / 5f;
         b_detailWeight = (b1.detailWeight + b2.detailWeight + b3.detailWeight + b4.detailWeight + b5.detailWeight) / 5f;
     }
 
-    /**
-     * Calcula o ponto mais alto de terreno sólido para cada coluna (x, z) do chunk.
-     * NOTA: Combina ruído FBm com Perlin 3D para permitir geração de overhangs.
-     * 
-     * @param surfaceHeight: Matriz 2D onde será guardada a altura máxima de cada coluna
-     */
+
     private void GetColumnSurfaceHeight(int[,] surfaceHeight, Biome[,] columnBiomes)
     {
         for (int x = 0; x < chunkSize; x++)
@@ -192,11 +169,7 @@ public class Chunk : MonoBehaviour
         }
     }
 
-    /**
-     * Inicializa o terreno base e escava grutas, atribuindo tipos de bloco em camadas orgânicas (Bedrock a Grass).
-     * Utiliza ruído Perlin aliado à profundidade da superfície para gerar transições geológicas naturais e irregulares.
-     * * @param surfaceHeight: Matriz 2D com a altura da superfície por coluna, usada para calcular a profundidade.
-     */
+
     private void CreateInitialChunkData(int[,] surfaceHeight, Biome[,] columnBiomes)
     {
         for (int x = 0; x < chunkSize; x++)
@@ -216,12 +189,12 @@ public class Chunk : MonoBehaviour
 
                 for (int y = 0; y < chunkHeight; y++)
                 {
-                    // Cálculo da densidade do bloco atual
+
                     float densityNoise = NoiseUtils.Perlin3D(globalX * densityScale, y * densityScale, globalZ * densityScale);
                     float finalDensity = (h - y) + densityNoise * b_detailWeight;
                     bool solid = finalDensity > 0f;
 
-                    // Escavação de cavernas por threshold
+
                     if (solid && y > 1 && y < maxSurfaceHeight - margin)
                     {
                         float cx = globalX * caveScale;
@@ -232,59 +205,57 @@ public class Chunk : MonoBehaviour
                             solid = false;
                     }
 
-                    // Cálculo corrigido da densidade do bloco acima para determinar com precisão se é superfície real
+
                     float densityNoiseAbove = NoiseUtils.Perlin3D(globalX * densityScale, (y + 1) * densityScale, globalZ * densityScale);
                     float finalDensityAbove = (h - (y + 1)) + densityNoiseAbove * b_detailWeight;
                     bool surfaceBlock = finalDensityAbove <= 0f;
 
-                    // --- LÓGICA DE 'CAMADAS ORGÂNICAS' ---
+
                     Block.BlockType type;
 
-                    // Ruído Perlin 3D para perturbar as transições geológicas
+
                     float layerNoise = NoiseUtils.Perlin3D(globalX * 0.1f, y * 0.1f, globalZ * 0.1f) * 4f;
                     int depthFromSurface = surfaceHeight[x, z] - y;
 
                     if (!solid)
                     {
-                        type = Block.BlockType.AIR; //
+                        type = Block.BlockType.AIR;
                     }
                     else if (y <= 1 + (NoiseUtils.Perlin3D(globalX * 0.5f, y * 0.5f, globalZ * 0.5f) * 2f))
                     {
-                        // Bedrock na base absoluta (y = 0 a ~3 dependendo do ruído)
+
                         type = Block.BlockType.BEDROCK;
                     }
                     else if (finalDensity > 25f + layerNoise)
                     {
-                        // Camada muito profunda
+
                         type = Block.BlockType.COBBLESTONE;
                     }
                     else if (finalDensity > 3.5f + (layerNoise * 0.5f))
                     {
-                        // Debaixo da terra
+
                         type = Block.BlockType.STONE;
                     }
                     else
                     {
-                        // Camada superficial padrão
+
                         type = currentBiome.subSurfaceBlock;
                     }
 
-                    // --- MUTAÇÃO AMBIENTAL ---
-                    // Se o bloco gerado for terra/areia e a posição acima não for sólida (superfície), sofre mutação
+
+
                     if ((type == Block.BlockType.DIRT || type == Block.BlockType.SAND) && surfaceBlock)
                     {
                         type = currentBiome.surfaceBlock;
                     }
 
-                    chunkData[x, y, z] = new Block(type, new Vector3(x, y, z)); //
+                    chunkData[x, y, z] = new Block(type, new Vector3(x, y, z));
                 }
             }
         }
     }
 
-    /**
-     * Preenche os espaços de ar localizados abaixo do nível do mar (seaLevel) com blocos de água.
-     */
+
     private void GenerateWater()
     {
 
@@ -298,11 +269,7 @@ public class Chunk : MonoBehaviour
                 }
     }
 
-    /**
-     * Identifica superfícies interiores do terreno  e transforma blocos seriam terra em pedra (STONE).
-     * 
-     * @param surfaceHeight: Matriz que contém a altura da superfície para referência do que é interior
-     */
+
     private void TextureCaveWalls(int[,] surfaceHeight)
     {
         for (int x = 0; x < chunkSize; x++)
@@ -313,7 +280,7 @@ public class Chunk : MonoBehaviour
                 {
                     if (CaveGenerator.IsAir(chunkData, x, y, z)) continue;
 
-                    // blocos na superfície ou acima não são paredes de gruta
+
                     if (y >= surfaceHeight[x, z]) continue;
 
                     bool nextToCarvedAir = CaveGenerator.HasCarvedAirNeighbour(
@@ -325,9 +292,7 @@ public class Chunk : MonoBehaviour
         }
     }
 
-    /**
-     * Percorre o chunk após a escavação de grutas e transforma blocos de DIRT recém-expostos em GRASS.
-     */
+
     private void UpdateExposedDirt(Biome[,] columnBiomes)
     {
         for (int x = 0; x < chunkSize; x++)
@@ -337,10 +302,10 @@ public class Chunk : MonoBehaviour
                 Biome currentBiome = columnBiomes[x, z];
                 for (int y = 0; y < chunkHeight; y++)
                 {
-                    // Apenas nos preocupamos com blocos que são DIRT ou SAND
+
                     if (chunkData[x, y, z].type == Block.BlockType.DIRT || chunkData[x, y, z].type == Block.BlockType.SAND)
                     {
-                        // Se o bloco imediatamente acima for ar (porque foi escavado ou já o era), sofre mutação
+
                         if (y < chunkHeight - 1 && chunkData[x, y + 1, z].type == Block.BlockType.AIR)
                         {
                             chunkData[x, y, z].type = currentBiome.surfaceBlock;
@@ -351,17 +316,15 @@ public class Chunk : MonoBehaviour
         }
     }
 
-    /**
-     * Constrói apenas a mesh de colisão do chunk — chamado sempre independentemente da visibilidade.
-     */
+
     public void BuildCollisionMesh()
     {
-        // --- Main collision mesh (everything solid EXCEPT leaves) ---
+
         List<Vector3> vertices = new List<Vector3>();
         List<int> triangles = new List<int>();
         List<Vector2> uvs = new List<Vector2>();
 
-        // --- Separate leaves collision mesh ---
+
         List<Vector3> leavesVerts = new List<Vector3>();
         List<int> leavesTris = new List<int>();
         List<Vector2> leavesUvs = new List<Vector2>();
@@ -387,7 +350,7 @@ public class Chunk : MonoBehaviour
                     if (!HasSolidNeighbour(x + 1, y, z)) block.AddFaceToMeshData(Block.CubeFace.Right, vList, tList, uList);
                 }
 
-        // Build main collision mesh
+
         Mesh collisionMesh = new Mesh();
         collisionMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
         collisionMesh.vertices = vertices.ToArray();
@@ -398,20 +361,20 @@ public class Chunk : MonoBehaviour
         if (col == null) col = gameObject.AddComponent<MeshCollider>();
         col.sharedMesh = collisionMesh;
 
-        // Build leaves collision mesh on a separate child with the "Leaves" layer
+
         BuildLeavesCollider(leavesVerts, leavesTris);
 
-        // Build vegetation collision colliders as triggers
+
         BuildVegetationColliders();
     }
 
-    /// <summary>
-    /// Creates (or updates) a child GameObject on the "Leaves" layer with a MeshCollider
-    /// containing only leaf block geometry, allowing per-layer collision ignoring.
-    /// </summary>
+
+
+
+
     private void BuildLeavesCollider(List<Vector3> verts, List<int> tris)
     {
-        // Find or create child
+
         Transform leavesChild = transform.Find("LeavesCollider");
         GameObject leavesGO;
         if (leavesChild != null)
@@ -427,7 +390,7 @@ public class Chunk : MonoBehaviour
 
         if (verts.Count == 0)
         {
-            // No leaves in this chunk — remove collider if any
+
             MeshCollider mc = leavesGO.GetComponent<MeshCollider>();
             if (mc != null) DestroyImmediate(mc);
             return;
@@ -458,7 +421,7 @@ public class Chunk : MonoBehaviour
             vegGO.transform.SetParent(transform, false);
         }
 
-        // Clean up old colliders
+
         BoxCollider[] existing = vegGO.GetComponents<BoxCollider>();
         foreach (var col in existing)
         {
@@ -480,24 +443,21 @@ public class Chunk : MonoBehaviour
                 }
     }
 
-    /**
-     * Constrói a Mesh do chunk iterando pela sua matriz 3D.
-     * Através de Face Culling, omite vértices e triângulos das faces ocultas entre blocos.
-     */
+
     public void DrawChunk()
     {
-        // 1. Criar listas partilhadas (vertices, triangles, uvs)
+
         List<Vector3> sharedVertices = new List<Vector3>();
         List<int> sharedTriangles = new List<int>();
         List<Vector2> sharedUvs = new List<Vector2>();
 
-        // 2. Para cada bloco sólido ou vegetação: adicionar faces visíveis
+
         for (int x = 0; x < chunkSize; x++)
             for (int y = 0; y < chunkHeight; y++)
                 for (int z = 0; z < chunkSize; z++)
                 {
                     Block block = chunkData[x, y, z];
-                    if (block.isCrossMesh) 
+                    if (block.isCrossMesh)
                     {
                         block.AddCrossToMeshData(sharedVertices, sharedTriangles, sharedUvs);
                         continue;
@@ -511,7 +471,7 @@ public class Chunk : MonoBehaviour
                     if (!IsOpaqueOrSameNeighbour(x + 1, y, z, block.type)) block.AddFaceToMeshData(Block.CubeFace.Right, sharedVertices, sharedTriangles, sharedUvs);
                 }
 
-        // 3. Para cada bloco de água: adicionar faces contra ar
+
         for (int x = 0; x < chunkSize; x++)
             for (int y = 0; y < chunkHeight; y++)
                 for (int z = 0; z < chunkSize; z++)
@@ -526,22 +486,22 @@ public class Chunk : MonoBehaviour
                     if (IsAir(x + 1, y, z)) block.AddFaceToMeshData(Block.CubeFace.Right, sharedVertices, sharedTriangles, sharedUvs);
                 }
 
-        // 4. Criar e atribuir mesh visual
+
         Mesh mesh = new Mesh();
         mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
         mesh.vertices = sharedVertices.ToArray();
         mesh.triangles = sharedTriangles.ToArray();
         mesh.uv = sharedUvs.ToArray();
 
-        // 4. RecalculateNormals + RecalculateBounds
+
         mesh.RecalculateNormals();
         mesh.RecalculateBounds();
 
-        // 5. Atribuir ao MeshFilter e MeshRenderer
+
         gameObject.GetComponent<MeshFilter>().mesh = mesh;
         MeshRenderer mr = gameObject.GetComponent<MeshRenderer>();
         mr.material = chunkMaterial;
-        // garantir que o renderer está ativo depois de desenhar
+
         mr.enabled = true;
     }
 
@@ -568,32 +528,23 @@ public class Chunk : MonoBehaviour
         return neighbour.chunkData[localX, y, localZ].type == Block.BlockType.AIR;
     }
 
-    /**
-     * Verifica se um bloco adjacente é sólido.
-     * NOTE: Suporta consultas tanto dentro do próprio chunk como em chunks vizinhos geridos pelo WorldManager (Cross-chunk culling),
-     * garantindo que não são geradas faces inúteis nas fronteiras dos chunks.
-     * 
-     * @param x: Coordenada X vizinha a inspecionar.
-     * @param y: Coordenada Y vizinha a inspecionar.
-     * @param z: Coordenada Z vizinha a inspecionar.
-     * @return: True se o vizinho for sólido; False se for ar, vazio, ou se sair do limite vertical da altura do chunk.
-     */
+
     bool HasSolidNeighbour(int x, int y, int z)
     {
-        // y fora dos limites — sem chunks acima/abaixo
+
         if (y < 0 || y >= chunkHeight)
             return false;
 
-        // Dentro do chunk — consulta local (comportamento original)
+
         if (x >= 0 && x < chunkSize && z >= 0 && z < chunkSize)
             return chunkData[x, y, z].isSolid;
 
-        // Extensão D — cross-chunk culling
-        // Se não há WorldManager, trata a fronteira como vazia (comportamento original)
+
+
         if (worldManager == null)
             return false;
 
-        // Calcular qual o chunk vizinho e a coordenada local dentro dele
+
         Vector2Int neighbourOffset = worldOffset;
         int localX = x;
         int localZ = z;
@@ -622,18 +573,14 @@ public class Chunk : MonoBehaviour
 
         Chunk neighbour = worldManager.GetChunk(neighbourOffset);
 
-        // Se o vizinho não existe ou ainda não tem dados, trata como vazio
+
         if (neighbour == null || neighbour.chunkData == null)
             return false;
 
         return neighbour.chunkData[localX, y, localZ].isSolid;
     }
 
-    /**
-     * Verifica se o vizinho é opaco, ou se é do mesmo tipo translúcido.
-     * Isto previne que blocos translúcidos (como folhas) ocultem faces de blocos sólidos,
-     * mas permite que ocultem faces de outros blocos idênticos para poupar geometria.
-     */
+
     bool IsOpaqueOrSameNeighbour(int x, int y, int z, Block.BlockType myType)
     {
         if (y < 0 || y >= chunkHeight)

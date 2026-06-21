@@ -47,7 +47,7 @@ public class WorldManager : MonoBehaviour
         // 1. Configurar a Seed de Geração
         if (useRandomSeed) customSeed = Random.Range(int.MinValue, int.MaxValue);
         Random.InitState(customSeed);
-        
+
         // Atribuir offsets grandes pseudo-aleatórios para deslocar o Perlin Noise
         Config.seedOffsetX = Random.Range(-100000f, 100000f);
         Config.seedOffsetZ = Random.Range(-100000f, 100000f);
@@ -236,8 +236,8 @@ public class WorldManager : MonoBehaviour
         return new Vector2Int(
             Mathf.FloorToInt(pos.x / chunkSize),
             Mathf.FloorToInt(pos.z / chunkSize));
-            // FloorToInt garante que coordenadas negativas funcionam correctamente.
-            // Exemplo: x = -1 com chunkSize = 16 â†’ chunk -1 (nÃ£o 0).
+        // FloorToInt garante que coordenadas negativas funcionam correctamente.
+        // Exemplo: x = -1 com chunkSize = 16 â†’ chunk -1 (nÃ£o 0).
     }
 
     // MÃ©todo auxiliar: aceder a um chunk por coordenada (Ãºtil para cross-chunk)

@@ -1,9 +1,9 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 public class BeeSpawner : MonoBehaviour
 {
-    [Header("Setup")] 
+    [Header("Setup")]
     public GameObject beePrefab;
     public Transform hiveTransform;
     public int maxBees = 3;
@@ -47,7 +47,7 @@ public class BeeSpawner : MonoBehaviour
         hiveManager.UnregisterBee(bee);
         Destroy(bee.gameObject);
 
-        // Spawn a replacement after a short delay
+
         Invoke(nameof(SpawnBee), 2f);
     }
 

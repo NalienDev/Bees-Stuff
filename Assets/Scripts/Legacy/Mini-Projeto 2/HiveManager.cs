@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections.Generic;
 
 public class HiveManager : MonoBehaviour
@@ -8,7 +8,7 @@ public class HiveManager : MonoBehaviour
     [Header("Referencias de Spawning")]
     [SerializeField] private FlowerManager flowerManager;
     [SerializeField] private Transform hiveTransform;
-    [SerializeField] private MeshRenderer floorRenderer; // só define o footprint X/Z da arena
+    [SerializeField] private MeshRenderer floorRenderer;
 
     [Header("Terreno")]
     [SerializeField] private LayerMask terrainLayerMask;
@@ -131,7 +131,7 @@ public class HiveManager : MonoBehaviour
         if (Physics.Raycast(rayOrigin, Vector3.down, out RaycastHit hit, maxTerrainHeight * 2f, terrainLayerMask))
             return hit.point + Vector3.up * heightOffset;
 
-        Debug.LogWarning("HiveManager: terreno não encontrado sob a colmeia, a usar fallback.");
+        Debug.LogWarning("HiveManager: terreno nï¿½o encontrado sob a colmeia, a usar fallback.");
         return new Vector3(x, heightOffset, z);
     }
 }

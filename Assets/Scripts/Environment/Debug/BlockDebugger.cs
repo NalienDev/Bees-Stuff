@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 using System.Collections.Generic;
 using static Block;
@@ -15,7 +15,7 @@ public class BlockDebugger : MonoBehaviour
         List<int> triangles = new List<int>();
         List<Vector2> uvs = new List<Vector2>();
 
-        // Adicionar as 6 faces
+
         block.AddFaceToMeshData(Block.CubeFace.Front, vertices, triangles, uvs);
         block.AddFaceToMeshData(Block.CubeFace.Back, vertices, triangles, uvs);
         block.AddFaceToMeshData(Block.CubeFace.Top, vertices, triangles, uvs);
@@ -30,7 +30,7 @@ public class BlockDebugger : MonoBehaviour
         block2.AddFaceToMeshData(Block.CubeFace.Left, vertices, triangles, uvs);
         block2.AddFaceToMeshData(Block.CubeFace.Right, vertices, triangles, uvs);
 
-        // Construir a mesh
+
         Mesh mesh = new Mesh();
         mesh.vertices = vertices.ToArray();
         mesh.triangles = triangles.ToArray();

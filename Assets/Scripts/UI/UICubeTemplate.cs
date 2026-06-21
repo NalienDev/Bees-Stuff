@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class UICubeTemplate : MonoBehaviour
 {
@@ -27,7 +27,7 @@ public class UICubeTemplate : MonoBehaviour
             _topTexture.filterMode = FilterMode.Point;
             mat.SetTexture("_TopTex", _topTexture);
             mat.SetFloat("_HasTopTex", 1f);
-            // dividir por 255 para converter para 0-1
+
             mat.SetColor("_TopColor", _topColor);
         }
         else

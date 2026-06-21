@@ -1,25 +1,9 @@
-using UnityEngine;
+﻿using UnityEngine;
 
-/**
- * Classe estática responsável pela escavação de grutas e túneis no mundo.
- */
+
 public static class CaveGenerator
 {
-    /**
-     * Gera grutas 3D baseadas num threshold de ruído Perlin 3D.
-     * 
-     * Esta técnica remove blocos onde a densidade do ruído é superior ao limite definido,
-     * criando espaços irregulares no interior do terreno.
-     * 
-     * @param chunkData: Matriz de blocos do chunk
-     * @param chunkSize: Tamanho horizontal do chunk
-     * @param chunkHeight: Altura do chunk
-     * @param worldOffset: Posição global do chunk
-     * @param caveScale: Escala do ruído das grutas
-     * @param caveThreshold: Limiar de corte (valores maiores geram grutas menores)
-     * @param maxSurfaceHeight: Altura máxima para início da escavação
-     * @param margin: Margem de segurança para evitar grutas à superfície
-     */
+
     public static void GenerateCaves(Block[,,] chunkData, int chunkSize, int chunkHeight,
         Vector2Int worldOffset, float caveScale, float caveThreshold, int maxSurfaceHeight, int margin)
     {
@@ -43,25 +27,17 @@ public static class CaveGenerator
         }
     }
 
-    /**
-     * Inicializa as "Perlin Worms" - agentes que "escavam" túneis através dos chunks.
-     * 
-     * @param wormsPerChunk: Quantidade de agentes a criar por chunk
-     * @param steps: Duração da vida do agente (=comprimento do túnel)
-     * @param radius: Raio de escavação do túnel
-     * @param stepSize: Distância percorrida em cada passo
-     * @param directionScale: Frequência do ruído que determina a mudança de direção
-     */
+
     public static void GenerateWorms(Block[,,] chunkData, int chunkSize, int chunkHeight,
         Vector2Int worldOffset, int wormsPerChunk, int steps, float radius,
         float stepSize, float directionScale)
     {
         for (int i = 0; i < wormsPerChunk; i++)
         {
-            // Para a geração procedural ter continuidade entre chunks com seeds diferentes
+
             System.Random rng = new System.Random(Config.seedOffsetHash + worldOffset.x * 1234 + worldOffset.y * 5678);
 
-            // ponto de início aleatório dentro do chunk em coordenadas globais
+
             float globalStartX = worldOffset.x * chunkSize + (float)(rng.NextDouble() * chunkSize);
             float globalStartZ = worldOffset.y * chunkSize + (float)(rng.NextDouble() * chunkSize);
             float globalStartY = (float)(rng.NextDouble() * (chunkHeight * 0.5f - 5f)) + 5f;
@@ -71,9 +47,7 @@ public static class CaveGenerator
         }
     }
 
-    /**
-     * Executa a lógica de movimento e escavação de um agente (worm).
-     */
+
     static void CarveWorm(Block[,,] chunkData, int chunkSize, int chunkHeight,
         Vector2Int worldOffset, Vector3 start, int steps, float radius,
         float stepSize, float directionScale)
@@ -81,8 +55,8 @@ public static class CaveGenerator
         Vector3 pos = start;
         for (int i = 0; i < steps; i++)
         {
-            // direcção determinada por noise em coordenadas globais
-            // usar coordenadas globais garante continuidade entre chunks
+
+
             float gx = pos.x * directionScale;
             float gy = pos.y * directionScale;
             float gz = pos.z * directionScale;
@@ -96,19 +70,13 @@ public static class CaveGenerator
             CarveAt(chunkData, chunkSize, chunkHeight, worldOffset, pos, radius);
         }
     }
-    // TODO: worm cave generation seed based para ter cavernas naturais que passam entre varios chunks 
 
-    /**
-     * Escava uma esfera de ar em torno de uma posição específica.
-     * Converte as coordenadas globais do agente em índices locais do array do chunk.
-     * 
-     * @param center: Posição global do centro da escavação
-     * @param radius: Raio da esfera
-     */
+
+
     static void CarveAt(Block[,,] chunkData, int chunkSize, int chunkHeight,
         Vector2Int worldOffset, Vector3 center, float radius)
     {
-        // converter coordenadas globais para locais ao chunk
+
         int localX = Mathf.RoundToInt(center.x) - worldOffset.x * chunkSize;
         int localY = Mathf.RoundToInt(center.y);
         int localZ = Mathf.RoundToInt(center.z) - worldOffset.y * chunkSize;
@@ -130,11 +98,7 @@ public static class CaveGenerator
                 }
     }
 
-    /**
-     * Verifica se algum vizinho imediato do bloco foi escavado (ar).
-     * 
-     * @return: True se existir um vizinho que esteja escavado
-     */
+
     public static bool HasCarvedAirNeighbour(Block[,,] chunkData, int chunkSize, int chunkHeight,
         Vector2Int worldOffset, float densityScale, int octaves, float scale, int x, int y, int z)
     {
@@ -147,22 +111,20 @@ public static class CaveGenerator
         return false;
     }
 
-    /* Atalho para verificar se um bloco é do tipo ar. */
+
     public static bool IsAir(Block[,,] chunkData, int x, int y, int z)
     {
         return chunkData[x, y, z].type == Block.BlockType.AIR;
     }
 
-    /**
-     * Determina se um bloco de ar atual é fruto de escavação (carving) ou se seria naturalmente ar.
-     */
+
     static bool IsCarvedAir(Block[,,] chunkData, int chunkSize, int chunkHeight,
         Vector2Int worldOffset, float densityScale, int octaves, float scale, int x, int y, int z)
     {
-        // o bloco tem de ser ar no chunkData
+
         if (!IsAir(chunkData, x, y, z)) return false;
 
-        // e teria de ser sólido sem o carving, ou seja, é ar criado pelo carving e não pela superfície
+
         float heightNoise = NoiseUtils.FBm(x, z, octaves, scale) * chunkHeight;
         float densityNoise = NoiseUtils.Perlin3D(
             (worldOffset.x * chunkSize + x) * densityScale,

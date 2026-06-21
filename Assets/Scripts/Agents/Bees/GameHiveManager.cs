@@ -1,10 +1,10 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 public class GameHiveManager : MonoBehaviour
 {
     [SerializeField] private float honeyStored = 0f;
-    private List<GameBeeAgent> bees = new List<GameBeeAgent>(); 
+    private List<GameBeeAgent> bees = new List<GameBeeAgent>();
     private List<FlowerController> allFlowers = new List<FlowerController>();
 
     public float HoneyStored => honeyStored;

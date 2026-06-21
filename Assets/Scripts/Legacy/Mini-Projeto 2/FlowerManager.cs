@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections.Generic;
 
 public class FlowerManager : MonoBehaviour
@@ -29,7 +29,7 @@ public class FlowerManager : MonoBehaviour
             {
                 Vector3 spawnPos = GetGroundedPosition(rect, flowerHeightOffset);
                 GameObject flower = Instantiate(flowerPrefab, transform);
-                flower.transform.position = spawnPos; // posição em mundo, já não local
+                flower.transform.position = spawnPos;
                 spawnedFlowers.Add(flower);
             }
         }
@@ -55,7 +55,7 @@ public class FlowerManager : MonoBehaviour
                 return hit.point + Vector3.up * heightOffset;
         }
 
-        Debug.LogWarning("FlowerManager: terreno não encontrado, a usar fallback.");
+        Debug.LogWarning("FlowerManager: terreno nï¿½o encontrado, a usar fallback.");
         return new Vector3(rect.center.x, heightOffset, rect.center.y);
     }
 }

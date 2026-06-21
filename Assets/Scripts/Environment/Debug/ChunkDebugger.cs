@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using static Config;
 
 public class ChunkDebugger : MonoBehaviour

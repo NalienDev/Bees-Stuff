@@ -1,37 +1,33 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
-/**
- * Classe que representa um bloco individual no mundo.
- * NOTA: Nao herda de MonoBehaviour. Esta abordagem elimina a criacao de GameObjects temporarios
- * e permite agrupar milhares de blocos numa unica draw call.
- */
+
 public class Block
 {
-    /* Enumeracao das 6 faces possiveis de um cubo. */
+
     public enum CubeFace { Front, Back, Top, Bottom, Left, Right }
 
-    /* Enumeracao dos tipos de bloco disponiveis, definindo a textura e dando confirmacao de existencia. */
+
     public enum BlockType { GRASS, DIRT, STONE, COBBLESTONE, BEDROCK, WATER, AIR, WOOD, LEAVES, SHORT_GRASS, FLOWER, HIVE, SAND, CACTUS, SNOW, PINE_LEAVES, PINE_WOOD, JUNGLE_WOOD, JUNGLE_LEAVES, MOSS, SNOWBUSH }
 
-    /* Tipo do bloco individual. */
+
     public BlockType type;
-    /* Posicao local do bloco dentro do chunk. */
+
     public Vector3 position;
-    /* Define se o bloco e solido (contribui para colisoes e culling normal). */
+
     public bool isSolid;
-    /* Define se o bloco e translucido (ex: folhas). Translucidos sao solidos visualmente mas nao ocluem faces vizinhas. */
+
     public bool isTranslucent;
-    /* Define se o bloco usa uma malha em cruz (duas faces cruzadas) para vegetacao, em vez de um cubo. */
+
     public bool isCrossMesh;
 
-    /* Dicionario global para guardar as coordenadas UV de cada textura gerada dinamicamente. */
+
     private static Dictionary<string, Rect> textureUVs = new Dictionary<string, Rect>();
 
-    /* O material unico gerado que contem o atlas de texturas agrupado em tempo de execucao. */
+
     public static Material AtlasMaterial { get; private set; }
 
-    /* Os 8 vertices locais que compoem um cubo unitario centrado na origem [aula01]. */
+
     static readonly Vector3 v0 = new Vector3(-0.5f, -0.5f, 0.5f);
     static readonly Vector3 v1 = new Vector3(0.5f, -0.5f, 0.5f);
     static readonly Vector3 v2 = new Vector3(0.5f, -0.5f, -0.5f);
@@ -41,41 +37,34 @@ public class Block
     static readonly Vector3 v6 = new Vector3(0.5f, 0.5f, -0.5f);
     static readonly Vector3 v7 = new Vector3(-0.5f, 0.5f, -0.5f);
 
-    /* CONSTRUTOR: Inicializa uma nova instancia de um bloco */
+
     public Block(BlockType type, Vector3 position)
     {
         this.position = position;
         SetType(type);
     }
 
-    /**
-     * Atualiza o tipo do bloco e recalcula as suas propriedades físicas e visuais correspondentes.
-     */
+
     public void SetType(BlockType newType)
     {
         this.type = newType;
         this.isCrossMesh = (type == BlockType.SHORT_GRASS || type == BlockType.FLOWER || type == BlockType.SNOWBUSH);
-        // Cross meshes nao sao solidas (nao tem colisao nem participam no face culling)
+
         this.isSolid = (type != BlockType.AIR && type != BlockType.WATER && !this.isCrossMesh);
         this.isTranslucent = (type == BlockType.LEAVES || type == BlockType.PINE_LEAVES || type == BlockType.JUNGLE_LEAVES || type == BlockType.HIVE);
     }
 
-    /**
-     * Inicializa o Atlas de Texturas em Tempo de Execucao.
-     * Carrega as imagens individuais das pastas Resources/Blocks/ e Resources/TransparentBlocks/
-     * e agrupa-as numa única textura (Atlas) para manter a otimizacao de 1 draw call.
-     *
-     * @param voxelShader: O Shader que sera utilizado para criar o material do Atlas.
-     */
+
     public static void InitializeAtlas(Material baseMaterial)
     {
-        if (textureUVs.Count > 0) return; // Ja inicializado
+        if (textureUVs.Count > 0) return;
 
         List<Texture2D> texturesToPack = new List<Texture2D>();
         List<string> textureKeys = new List<string>();
 
-        // Funcao lambda interna auxiliar para carregar ficheiros de Resources
-        System.Action<string, bool> loadTex = (fileName, isTransparent) => {
+
+        System.Action<string, bool> loadTex = (fileName, isTransparent) =>
+        {
             string path = (isTransparent ? "TransparentBlocks/" : "Blocks/") + fileName;
             Texture2D tex = Resources.Load<Texture2D>(path);
             if (tex != null)
@@ -89,7 +78,7 @@ public class Block
             }
         };
 
-        // Carregar texturas solidas da pasta Blocks/
+
         loadTex("dirt", false);
         loadTex("stone", false);
         loadTex("cobblestone", false);
@@ -111,7 +100,7 @@ public class Block
         loadTex("hive_top", false);
         loadTex("hive_side", false);
 
-        // Carregar texturas transparentes/recortadas da pasta TransparentBlocks/
+
         loadTex("leaves", true);
         loadTex("short_grass", true);
         loadTex("flower", true);
@@ -119,33 +108,31 @@ public class Block
         loadTex("leaves_jungle", true);
         loadTex("snowbush", true);
 
-        // Criar a textura do atlas global em alta resolucao COM mipmaps
+
         Texture2D runtimeAtlas = new Texture2D(2048, 2048, TextureFormat.RGBA32, true);
-        runtimeAtlas.filterMode = FilterMode.Point; // Mantem o aspeto pixel-art nitido sem esborratar
+        runtimeAtlas.filterMode = FilterMode.Point;
         runtimeAtlas.anisoLevel = 1;
 
-        // O Unity junta as texturas todas aqui e retorna os sub-retangulos (coordenadas) correspondentes
+
         Rect[] rects = runtimeAtlas.PackTextures(texturesToPack.ToArray(), 4, 2048, false);
 
-        // Dilatar as margens das texturas para impedir bleeding quando o mipmapping é gerado
+
         DilateEdges(runtimeAtlas, rects);
 
-        // Guardar as coordenadas UV resultantes no dicionario indexadas pelo nome do ficheiro
+
         for (int i = 0; i < textureKeys.Count; i++)
         {
             textureUVs.Add(textureKeys[i], rects[i]);
         }
 
-        // Criar o material unico que os seus Chunks vao partilhar
+
         AtlasMaterial = new Material(baseMaterial);
         AtlasMaterial.mainTexture = runtimeAtlas;
         AtlasMaterial.color = Color.white;
-        
+
     }
 
-    /**
-     * Devolve o nome do ficheiro .png correspondente com base no tipo de bloco e na face especifica.
-     */
+
     private static string GetTextureKey(CubeFace face, BlockType type)
     {
         switch (type)
@@ -184,28 +171,21 @@ public class Block
             case BlockType.FLOWER: return "flower";
             case BlockType.SAND: return "sand";
             case BlockType.CACTUS: return "cactus";
-            default: return "stone"; // Fallback de seguranca
+            default: return "stone";
         }
     }
 
-    /**
-     * Calcula as coordenadas UV para uma face especifica do bloco com base no atlas gerado em tempo de execucao.
-     * Mapeia dinamicamente os cantos do sub-rectangulo obtido pelo empacotamento de texturas.
-     *
-     * @param face: A face do cubo para a qual se pretende obter as coordenadas UV.
-     * @param type: O tipo de bloco, que determina a textura a procurar.
-     * @return: Um array de Vector2 com as 4 coordenadas UV correspondentes a textura no atlas.
-     */
+
     public static Vector2[] GetUVs(CubeFace face, BlockType type)
     {
         string key = GetTextureKey(face, type);
 
-        // Vai buscar o retangulo da textura gerada ou usa o tamanho maximo em caso de falha externa
+
         Rect rect = textureUVs.ContainsKey(key) ? textureUVs[key] : new Rect(0, 0, 1, 1);
 
-        // Mapeia os 4 cantos do sub-rectangulo do atlas retornado pelo PackTextures
-        // Recuo (inset) critico para evitar sangramento ao usar mipmaps
-        float inset = 0.0005f; 
+
+
+        float inset = 0.0005f;
         Vector2 uv00 = new Vector2(rect.xMin + inset, rect.yMin + inset);
         Vector2 uv10 = new Vector2(rect.xMax - inset, rect.yMin + inset);
         Vector2 uv01 = new Vector2(rect.xMin + inset, rect.yMax - inset);
@@ -214,11 +194,7 @@ public class Block
         return new[] { uv11, uv01, uv00, uv10 };
     }
 
-    /**
-     * Dilata (estica) as extremidades de cada sub-textura do atlas para os pixeis de padding vizinhos.
-     * Isto é estritamente necessário porque, com mipmaps ativados, a redução de escala mistura
-     * as margens da textura com o padding transparente ao lado, criando listas invisíveis.
-     */
+
     private static void DilateEdges(Texture2D atlas, Rect[] rects)
     {
         Color32[] pixels = atlas.GetPixels32();
@@ -232,7 +208,7 @@ public class Block
             int rw = Mathf.RoundToInt(r.width * width);
             int rh = Mathf.RoundToInt(r.height * height);
 
-            // Left padding
+
             for (int p = 1; p <= 2; p++)
             {
                 if (rx - p < 0) continue;
@@ -240,7 +216,7 @@ public class Block
                     pixels[(ry + y) * width + (rx - p)] = pixels[(ry + y) * width + rx];
             }
 
-            // Right padding
+
             for (int p = 1; p <= 2; p++)
             {
                 if (rx + rw - 1 + p >= width) continue;
@@ -248,7 +224,7 @@ public class Block
                     pixels[(ry + y) * width + (rx + rw - 1 + p)] = pixels[(ry + y) * width + (rx + rw - 1)];
             }
 
-            // Top padding
+
             for (int p = 1; p <= 2; p++)
             {
                 if (ry + rh - 1 + p >= height) continue;
@@ -260,7 +236,7 @@ public class Block
                 }
             }
 
-            // Bottom padding
+
             for (int p = 1; p <= 2; p++)
             {
                 if (ry - p < 0) continue;
@@ -274,21 +250,12 @@ public class Block
         }
 
         atlas.SetPixels32(pixels);
-        // O false não desativa os mipmaps, apenas evita recalcular mipmaps vazios ANTES do Apply terminar.
-        // Como criámos a textura com mipmaps = true, o Apply(true) recalcula-os corretamente com as margens dilatadas.
+
+
         atlas.Apply(true);
     }
 
-    /**
-     * Adiciona os vertices, triangulos e UVs de uma face visivel as listas partilhadas do chunk.
-     * NOTA: Utiliza um offset (vertexIndex) para garantir que os indices dos triangulos referenciam os vertices corretos
-     * desta face, prevenindo corrupcao da mesh do chunk ao juntar multiplos blocos no primeiro indice.
-     *
-     * @param face: A face do cubo a processar.
-     * @param vertices: Lista partilhada de vertices do chunk.
-     * @param triangles: Lista partilhada de indices de triangulos do chunk.
-     * @param uvs: Lista partilhada de coordenadas UV do chunk.
-     */
+
     public void AddFaceToMeshData(CubeFace face, List<Vector3> vertices, List<int> triangles, List<Vector2> uvs)
     {
         int vertexIndex = vertices.Count;
@@ -336,33 +303,30 @@ public class Block
         }
     }
 
-    /**
-     * Adiciona a malha em cruz (duas faces intersetadas em X) para vegetacao.
-     * Nao sofre face culling e nao tem colisao.
-     */
+
     public void AddCrossToMeshData(List<Vector3> vertices, List<int> triangles, List<Vector2> uvs)
     {
         int vertexIndex = vertices.Count;
-        Vector2[] uv = GetUVs(CubeFace.Front, type); // textura unica
+        Vector2[] uv = GetUVs(CubeFace.Front, type);
 
-        // Definir os dois quads cruzados nas diagonais do cubo unitario
-        // Quad 1: (-0.5, -0.5, -0.5) a (0.5, 0.5, 0.5)
+
+
         Vector3 q1v0 = new Vector3(-0.5f, -0.5f, -0.5f) + position;
         Vector3 q1v1 = new Vector3(0.5f, -0.5f, 0.5f) + position;
         Vector3 q1v2 = new Vector3(0.5f, 0.5f, 0.5f) + position;
         Vector3 q1v3 = new Vector3(-0.5f, 0.5f, -0.5f) + position;
 
-        // Quad 2: (-0.5, -0.5, 0.5) a (0.5, 0.5, -0.5)
+
         Vector3 q2v0 = new Vector3(-0.5f, -0.5f, 0.5f) + position;
         Vector3 q2v1 = new Vector3(0.5f, -0.5f, -0.5f) + position;
         Vector3 q2v2 = new Vector3(0.5f, 0.5f, -0.5f) + position;
         Vector3 q2v3 = new Vector3(-0.5f, 0.5f, 0.5f) + position;
 
         Vector3[] crossVertices = {
-            q1v0, q1v1, q1v2, q1v3, // Frente quad 1
-            q1v1, q1v0, q1v3, q1v2, // Tras quad 1
-            q2v0, q2v1, q2v2, q2v3, // Frente quad 2
-            q2v1, q2v0, q2v3, q2v2  // Tras quad 2
+            q1v0, q1v1, q1v2, q1v3,
+            q1v1, q1v0, q1v3, q1v2,
+            q2v0, q2v1, q2v2, q2v3,
+            q2v1, q2v0, q2v3, q2v2
         };
 
         Vector2[] crossUvs = {

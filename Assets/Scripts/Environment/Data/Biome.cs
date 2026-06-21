@@ -1,23 +1,23 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class Biome
 {
     public enum BiomeType { PLAINS, DESERT, SNOW, JUNGLE }
-    
+
     public string name;
     public BiomeType biomeType;
 
-    // Terrain parameters
+
     public float scale;
     public int octaves;
     public int maxSolidHeight;
     public float detailWeight;
 
-    // Surface definition
+
     public Block.BlockType surfaceBlock;
     public Block.BlockType subSurfaceBlock;
 
-    // Flora parameters
+
     public float treeThreshold;
     public float grassDensity;
     public float flowerDensity;

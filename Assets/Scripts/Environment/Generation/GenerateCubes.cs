@@ -7,10 +7,10 @@ public class GenerateCubes : MonoBehaviour
 {
     [SerializeField] private int size = 10;
     [SerializeField] private Material material;
-    
+
     void Start()
     {
-        //StartCoroutine(InitializeCubes());
+
         CriarMesh();
     }
 
@@ -71,21 +71,14 @@ public class GenerateCubes : MonoBehaviour
         MeshRenderer mr = gameObject.AddComponent<MeshRenderer>();
         mr.material = material;
 
-        // Destruir os quads temporários
+
         foreach (Transform child in transform)
             Destroy(child.gameObject);
     }
 
     void Update()
     {
-        /*
-        Vector3[] verts = GetComponent<MeshFilter>().mesh.vertices;
-        verts[7] = verts[4] + Vector3.up;
-        verts[5] = verts[5] + Vector3.up;
-        verts[6] = verts[6] + Vector3.up;
-        verts[7] = verts[7] + Vector3.up;
-        gameObject.GetComponent<MeshFilter>().mesh.vertices = verts;
-        */
+
 
         transform.Rotate(Vector3.up, 30f * Time.deltaTime);
     }

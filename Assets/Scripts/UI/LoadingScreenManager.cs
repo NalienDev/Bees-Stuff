@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 public class LoadingScreenManager : MonoBehaviour
@@ -59,7 +59,7 @@ public class LoadingScreenManager : MonoBehaviour
     {
         if (isLoaded) return;
 
-        // Wait a short time for the initial chunks/hives to register/generate
+
         if (Time.timeSinceLevelLoad < 2f) return;
 
         bool allHivesSpawned = true;
