@@ -368,6 +368,7 @@ public class Chunk : MonoBehaviour
                 for (int z = 0; z < chunkSize; z++)
                 {
                     Block block = chunkData[x, y, z];
+
                     if (!block.isSolid) continue;
 
                     bool isLeaf = (block.type == Block.BlockType.LEAVES);
@@ -396,6 +397,9 @@ public class Chunk : MonoBehaviour
 
         // Build leaves collision mesh on a separate child with the "Leaves" layer
         BuildLeavesCollider(leavesVerts, leavesTris);
+
+        // Build vegetation collision colliders as triggers
+        BuildVegetationColliders();
     }
 
     /// <summary>
@@ -435,6 +439,42 @@ public class Chunk : MonoBehaviour
         MeshCollider leavesCol = leavesGO.GetComponent<MeshCollider>();
         if (leavesCol == null) leavesCol = leavesGO.AddComponent<MeshCollider>();
         leavesCol.sharedMesh = leavesMesh;
+    }
+
+    private void BuildVegetationColliders()
+    {
+        Transform vegChild = transform.Find("VegetationCollider");
+        GameObject vegGO;
+        if (vegChild != null)
+        {
+            vegGO = vegChild.gameObject;
+        }
+        else
+        {
+            vegGO = new GameObject("VegetationCollider");
+            vegGO.transform.SetParent(transform, false);
+        }
+
+        // Clean up old colliders
+        BoxCollider[] existing = vegGO.GetComponents<BoxCollider>();
+        foreach (var col in existing)
+        {
+            DestroyImmediate(col);
+        }
+
+        for (int x = 0; x < chunkSize; x++)
+            for (int y = 0; y < chunkHeight; y++)
+                for (int z = 0; z < chunkSize; z++)
+                {
+                    Block block = chunkData[x, y, z];
+                    if (block.isCrossMesh)
+                    {
+                        BoxCollider bc = vegGO.AddComponent<BoxCollider>();
+                        bc.center = block.position;
+                        bc.size = new Vector3(1f, 1f, 1f);
+                        bc.isTrigger = true;
+                    }
+                }
     }
 
     /**

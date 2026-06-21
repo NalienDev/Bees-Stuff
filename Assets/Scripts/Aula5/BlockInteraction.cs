@@ -125,8 +125,7 @@ public class BlockInteraction : MonoBehaviour
         localZ < 0 || localZ >= cs) return;
 
         Block block = chunk.chunkData[localX, localY, localZ];
-        block.type = type;
-        block.isSolid = (type != Block.BlockType.AIR);
+        block.SetType(type);
 
         chunk.DrawChunk();
         chunk.BuildCollisionMesh();

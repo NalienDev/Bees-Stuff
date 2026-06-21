@@ -44,13 +44,20 @@ public class Block
     /* CONSTRUTOR: Inicializa uma nova instancia de um bloco */
     public Block(BlockType type, Vector3 position)
     {
-        this.type = type;
         this.position = position;
+        SetType(type);
+    }
 
-        isCrossMesh = (type == BlockType.SHORT_GRASS || type == BlockType.FLOWER || type == BlockType.SNOWBUSH);
+    /**
+     * Atualiza o tipo do bloco e recalcula as suas propriedades físicas e visuais correspondentes.
+     */
+    public void SetType(BlockType newType)
+    {
+        this.type = newType;
+        this.isCrossMesh = (type == BlockType.SHORT_GRASS || type == BlockType.FLOWER || type == BlockType.SNOWBUSH);
         // Cross meshes nao sao solidas (nao tem colisao nem participam no face culling)
-        isSolid = (type != BlockType.AIR && type != BlockType.WATER && !isCrossMesh);
-        isTranslucent = (type == BlockType.LEAVES || type == BlockType.PINE_LEAVES || type == BlockType.JUNGLE_LEAVES || type == BlockType.HIVE); // Hive tem cantos transparentes? Vamos tratar como translucido pra garantir que nao corta coisas.
+        this.isSolid = (type != BlockType.AIR && type != BlockType.WATER && !this.isCrossMesh);
+        this.isTranslucent = (type == BlockType.LEAVES || type == BlockType.PINE_LEAVES || type == BlockType.JUNGLE_LEAVES || type == BlockType.HIVE);
     }
 
     /**
@@ -112,8 +119,8 @@ public class Block
         loadTex("leaves_jungle", true);
         loadTex("snowbush", true);
 
-        // Criar a textura do atlas global em alta resolucao COM mipmaps.
-        Texture2D runtimeAtlas = new Texture2D(2048, 2048, TextureFormat.RGBA32, true);
+        // Criar a textura do atlas global em alta resolucao SEM mipmaps para evitar bleeding
+        Texture2D runtimeAtlas = new Texture2D(2048, 2048, TextureFormat.RGBA32, false);
         runtimeAtlas.filterMode = FilterMode.Point; // Mantem o aspeto pixel-art nitido sem esborratar
         runtimeAtlas.anisoLevel = 1;
 
@@ -194,10 +201,12 @@ public class Block
         Rect rect = textureUVs.ContainsKey(key) ? textureUVs[key] : new Rect(0, 0, 1, 1);
 
         // Mapeia os 4 cantos do sub-rectangulo do atlas retornado pelo PackTextures
-        Vector2 uv00 = new Vector2(rect.xMin, rect.yMin);
-        Vector2 uv10 = new Vector2(rect.xMax, rect.yMin);
-        Vector2 uv01 = new Vector2(rect.xMin, rect.yMax);
-        Vector2 uv11 = new Vector2(rect.xMax, rect.yMax);
+        // Adicionamos um pequeno recuo (inset) para evitar texture bleeding nas margens
+        float inset = 0.0002f;
+        Vector2 uv00 = new Vector2(rect.xMin + inset, rect.yMin + inset);
+        Vector2 uv10 = new Vector2(rect.xMax - inset, rect.yMin + inset);
+        Vector2 uv01 = new Vector2(rect.xMin + inset, rect.yMax - inset);
+        Vector2 uv11 = new Vector2(rect.xMax - inset, rect.yMax - inset);
 
         return new[] { uv11, uv01, uv00, uv10 };
     }
