@@ -4,7 +4,7 @@ using static Config;
 
 /**
  * Ponte entre o mundo voxel e o sistema de abelhas.
- * Escaneia chunks gerados à procura de blocos HIVE e FLOWER,
+ * Escaneia chunks gerados a procura de blocos HIVE e FLOWER,
  * instancia os GameObjects correspondentes e gere a lista global de flores.
  */
 public class WorldBeeManager : MonoBehaviour
@@ -14,13 +14,13 @@ public class WorldBeeManager : MonoBehaviour
     [Header("Prefabs")]
     [Tooltip("Prefab com BeeSpawner + GameHiveManager")]
     public GameObject hivePrefab;
-    [Tooltip("Prefab invisível com FlowerController — sem mesh, só lógica")]
+    [Tooltip("Prefab invisivel com FlowerController - sem mesh, so logica")]
     public GameObject flowerControllerPrefab;
 
-    // Objetos instanciados por chunk, para limpeza quando o chunk é removido
+    // Objetos instanciados por chunk, para limpeza quando o chunk e removido
     private Dictionary<Vector2Int, List<GameObject>> chunkObjects = new();
 
-    // Lista global de flores acessível a todas as abelhas
+    // Lista global de flores acessivel a todas as abelhas
     private List<FlowerController> allFlowers = new();
     public List<FlowerController> AllFlowers => allFlowers;
 
@@ -31,14 +31,14 @@ public class WorldBeeManager : MonoBehaviour
     }
 
     /**
-     * Chamado pelo WorldManager após um chunk ser gerado e desenhado.
-     * Escaneia o chunkData à procura de HIVE e FLOWER e instancia os GameObjects.
+     * Chamado pelo WorldManager apos um chunk ser gerado e desenhado.
+     * Escaneia o chunkData a procura de HIVE e FLOWER e instancia os GameObjects.
      */
     public void OnChunkGenerated(Chunk chunk)
     {
         Vector2Int coord = chunk.worldOffset;
 
-        // Evitar processar o mesmo chunk duas vezes (ex: reativação de sleeping chunk)
+        // Evitar processar o mesmo chunk duas vezes (ex: reativacao de sleeping chunk)
         if (chunkObjects.ContainsKey(coord)) return;
 
         List<GameObject> spawned = new();
@@ -85,7 +85,7 @@ public class WorldBeeManager : MonoBehaviour
         {
             beeSpawner.hiveTransform = hiveGO.transform;
             beeSpawner.hiveManager = hiveManager;
-            // Spawn das abelhas iniciais é feito no Start() do BeeSpawner
+            // Spawn das abelhas iniciais e feito no Start() do BeeSpawner
         }
 
         Debug.Log($"WorldBeeManager: Colmeia instanciada em {worldPos}");
@@ -104,8 +104,8 @@ public class WorldBeeManager : MonoBehaviour
     }
 
     /**
-     * Chamado pelo WorldManager quando um chunk é removido permanentemente.
-     * Destrói os GameObjects associados e limpa a lista global de flores.
+     * Chamado pelo WorldManager quando um chunk e removido permanentemente.
+     * Destroi os GameObjects associados e limpa a lista global de flores.
      */
     public void OnChunkRemoved(Vector2Int coord)
     {
@@ -122,5 +122,28 @@ public class WorldBeeManager : MonoBehaviour
         }
 
         chunkObjects.Remove(coord);
+    }
+
+    /**
+     * Destroi o GameObject de uma flor especifica a partir da sua posicao global no mundo,
+     * removendo-a tambem das listas internas do manager.
+     */
+    public void DestroyFlowerAt(Vector3 worldPos)
+    {
+        FlowerController fc = allFlowers.Find(f => 
+            f != null && Vector3Int.RoundToInt(f.transform.position) == Vector3Int.RoundToInt(worldPos));
+
+        if (fc == null) return;
+
+        allFlowers.Remove(fc);
+
+        // Remover tambem do chunkObjects para que OnChunkRemoved nao tente limpa-lo novamente
+        foreach (var list in chunkObjects.Values)
+        {
+            if (list.Remove(fc.gameObject))
+                break;
+        }
+
+        Destroy(fc.gameObject);
     }
 }
