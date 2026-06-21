@@ -286,6 +286,12 @@ public static class TreeGenerator
             float progress = (float)(y - startLeavesY) / (trunkHeight + 2 - (trunkHeight * 0.3f));
             int r = Mathf.Max(0, Mathf.RoundToInt(Mathf.Lerp(maxRadius, 0, progress)));
             
+            // Prevent baldness: if we are at or below the top of the trunk, guarantee at least a 1-block leaf radius!
+            if (y <= surfaceY + trunkHeight && r == 0)
+            {
+                r = 1;
+            }
+            
             for (int dx = -r; dx <= r; dx++)
             {
                 for (int dz = -r; dz <= r; dz++)

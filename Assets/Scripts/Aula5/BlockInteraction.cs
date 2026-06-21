@@ -24,9 +24,46 @@ public class BlockInteraction : MonoBehaviour
     };
     private int currentIndex = 0;
 
+    [Header("Mining Settings")]
+    public float baseMiningTime = 0.5f;
+    private float miningProgress = 0f;
+    private Vector3 currentTargetPos = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
+    
+    private GameObject breakOverlay;
+    private Material breakMaterial;
+    private Texture2D[] destroyTextures;
+    
+#if ENABLE_INPUT_SYSTEM
+    private UnityEngine.InputSystem.PlayerInput _playerInput;
+#endif
+
     private void Start()
     {
         _input = GetComponent<StarterAssetsInputs>();
+#if ENABLE_INPUT_SYSTEM
+        _playerInput = GetComponent<UnityEngine.InputSystem.PlayerInput>();
+#endif
+
+        // Setup Break Overlay
+        breakOverlay = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        Destroy(breakOverlay.GetComponent<Collider>());
+        breakOverlay.transform.localScale = new Vector3(1.02f, 1.02f, 1.02f); // Slightly larger to prevent Z-fighting
+        
+        breakMaterial = new Material(Shader.Find("Unlit/Transparent"));
+        breakOverlay.GetComponent<MeshRenderer>().material = breakMaterial;
+        breakOverlay.SetActive(false);
+
+        // Load Crack Textures
+        destroyTextures = new Texture2D[10];
+        for (int i = 0; i < 10; i++)
+        {
+            destroyTextures[i] = Resources.Load<Texture2D>("Destroy/destroy_stage_" + i);
+            if (destroyTextures[i] != null)
+            {
+                // Force Point filtering at runtime to guarantee no blur!
+                destroyTextures[i].filterMode = FilterMode.Point; 
+            }
+        }
     }
 
     /**
@@ -40,16 +77,86 @@ public class BlockInteraction : MonoBehaviour
     }
     private void DetectAction()
     {
-        if (_input.breakBlock)
+        bool isHoldingBreak = _input.breakBlock;
+
+#if ENABLE_INPUT_SYSTEM
+        // Read the real-time held status directly from the Input Action to fix the stuck button bug
+        if (_playerInput != null)
         {
-            _input.breakBlock = false;
-            BreakBlock();
+            isHoldingBreak = _playerInput.actions["BreakBlock"].IsPressed();
         }
+#endif
+
+        UpdateMining(isHoldingBreak);
 
         if (_input.placeBlock)
         {
             _input.placeBlock = false;
             PlaceBlock();
+        }
+    }
+
+    private void UpdateMining(bool isHoldingBreak)
+    {
+        if (isHoldingBreak && highlightCube.gameObject.activeSelf)
+        {
+            Vector3 targetPos = highlightCube.position;
+
+            if (currentTargetPos != targetPos)
+            {
+                // Switched to a different block, instantly reset progress
+                miningProgress = 0f;
+                currentTargetPos = targetPos;
+            }
+
+            miningProgress += Time.deltaTime / baseMiningTime;
+
+            if (miningProgress >= 1f)
+            {
+                // Break the block
+                ModifyBlock(currentTargetPos, Block.BlockType.AIR);
+                miningProgress = 0f;
+                breakOverlay.SetActive(false);
+                return;
+            }
+        }
+        else
+        {
+            // Not holding break OR looking at the sky
+            // Gradually reverse (heal) the block's cracks!
+            if (miningProgress > 0f)
+            {
+                // Reverses at the same speed it breaks. You can multiply this to heal faster.
+                miningProgress -= Time.deltaTime / baseMiningTime;
+                
+                if (miningProgress <= 0f)
+                {
+                    miningProgress = 0f;
+                    breakOverlay.SetActive(false);
+                    // Clear any stuck input flags
+                    _input.breakBlock = false; 
+                    return;
+                }
+            }
+            else
+            {
+                // Nothing is being mined
+                _input.breakBlock = false; 
+                return;
+            }
+        }
+
+        // Update overlay visuals
+        if (miningProgress > 0f)
+        {
+            breakOverlay.SetActive(true);
+            breakOverlay.transform.position = currentTargetPos;
+            int stage = Mathf.Clamp(Mathf.FloorToInt(miningProgress * 10), 0, 9);
+            
+            if (destroyTextures[stage] != null)
+            {
+                breakMaterial.mainTexture = destroyTextures[stage];
+            }
         }
     }
 
@@ -178,16 +285,8 @@ public class BlockInteraction : MonoBehaviour
     }
 
     /**
-     * Destrói o bloco que foi atingido pelo raycast.
+     * Antigo metodo BreakBlock removido para dar lugar ao MineBlock sustentado.
      */
-    public void BreakBlock()
-    {
-        Ray ray = new Ray(Camera.main.transform.position,
-            Camera.main.transform.forward);
-        // Recuar meio bloco para obter a posição correta deste (o hit.pos esta na superficie entre dois blocos)
-        if (Physics.Raycast(ray, out RaycastHit hit, maxDistance))
-            ModifyBlock(hit.point - hit.normal * 0.5f, Block.BlockType.AIR);
-    }
 
     /**
      * Solicita a um chunk vizinho que reconstrua a sua malha (Mesh).
