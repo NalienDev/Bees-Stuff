@@ -9,12 +9,9 @@ public static class Config
     public static readonly int chunkHeight = 64;
 
     [Header("Configurações do Mundo")]
-    public static readonly int renderDistance = 3;
+    public static readonly int renderDistance = 5;
     /* Altura máxima do mundo */
     public static readonly int worldHeight = 256;
-
-    [Header("Geração de Terreno")]
-    public static readonly int seaLevel = 12;
 
     [Header("Seed Settings")]
     /* Offsets globais usados para deslocar as coordenadas de ruído, atuando como uma seed para a geração */

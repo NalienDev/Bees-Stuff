@@ -60,6 +60,9 @@ public class Chunk : MonoBehaviour
     // Extensão D — referência ao WorldManager para cross-chunk culling
     public WorldManager worldManager;
 
+    [System.NonSerialized]
+    public bool isFullyBuilt = false;
+
     /**
      * Inicializa os atributos do chunk e faz o arranque da geração da matriz de blocos.
      * 
