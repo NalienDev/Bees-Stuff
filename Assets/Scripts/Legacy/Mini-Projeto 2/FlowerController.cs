@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 /**
  * Controla o estado individual de uma flor.
@@ -26,6 +26,20 @@ public class FlowerController : MonoBehaviour
     public bool IsCharged => isCharged;
     /** Regista a abelha que tenciona colher esta flor, prevenindo a concorrência. */
     public MonoBehaviour ReservedBy { get; set; }
+
+    private void Awake()
+    {
+        // Garante que o prefab da flor (usado puramente para lógica no mundo Voxel)
+        // não tem colisores sólidos que bloqueiem o jogador (blocos invisíveis).
+        Collider[] colliders = GetComponents<Collider>();
+        foreach (var col in colliders)
+        {
+            if (!col.isTrigger)
+            {
+                Destroy(col);
+            }
+        }
+    }
 
     /**
      * Atualiza o temporizador de recarga a cada frame.
