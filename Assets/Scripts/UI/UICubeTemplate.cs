@@ -2,39 +2,39 @@
 
 public class UICubeTemplate : MonoBehaviour
 {
-    [SerializeField] private Texture2D _texture;
-    [SerializeField] private Texture2D _topTexture;
-    [SerializeField] private Material _templateMaterial;
-    [SerializeField] private Color _topColor;
-    private Renderer _renderer;
+    [SerializeField] private Texture2D texture;
+    [SerializeField] private Texture2D topTexture;
+    [SerializeField] private Material templateMaterial;
+    [SerializeField] private Color topColor;
+    private Renderer renderer;
 
     private void Start()
     {
-        if (_texture == null)
+        if (texture == null)
         {
             Debug.LogError("You forgot to assign atleast a top texture");
             return;
         }
 
-        _renderer = GetComponent<Renderer>();
-        _texture.filterMode = FilterMode.Point;
+        renderer = GetComponent<Renderer>();
+        texture.filterMode = FilterMode.Point;
 
-        Material mat = new Material(_templateMaterial);
-        mat.mainTexture = _texture;
+        Material mat = new Material(templateMaterial);
+        mat.mainTexture = texture;
 
-        if (_topTexture != null)
+        if (topTexture != null)
         {
-            _topTexture.filterMode = FilterMode.Point;
-            mat.SetTexture("_TopTex", _topTexture);
+            topTexture.filterMode = FilterMode.Point;
+            mat.SetTexture("_TopTex", topTexture);
             mat.SetFloat("_HasTopTex", 1f);
 
-            mat.SetColor("_TopColor", _topColor);
+            mat.SetColor("_TopColor", topColor);
         }
         else
         {
             mat.SetFloat("_HasTopTex", 0f);
         }
 
-        _renderer.material = mat;
+        renderer.material = mat;
     }
 }

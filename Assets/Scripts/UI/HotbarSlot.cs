@@ -3,17 +3,17 @@
 public class HotbarSlot : MonoBehaviour
 {
     public bool isActive;
-    [SerializeField] private GameObject _highlightImage;
+    [SerializeField] private GameObject highlightImage;
 
     void Update()
     {
         if (isActive)
         {
-            _highlightImage.SetActive(true);
+            highlightImage.SetActive(true);
         }
         else
         {
-            _highlightImage.SetActive(false);
+            highlightImage.SetActive(false);
         }
     }
 }

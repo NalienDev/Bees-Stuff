@@ -10,7 +10,7 @@ public class BlockInteraction : MonoBehaviour
     [Tooltip("Distância máxima (em blocos) que o jogador consegue interagir.")]
     public float maxDistance = 6f;
 
-    private StarterAssetsInputs _input;
+    private StarterAssetsInputs input;
     [Tooltip("Tipo de bloco que o jogador poderá colocar no mundo.")]
     public Block.BlockType placeType = Block.BlockType.DIRT;
     [Tooltip("Highlight que indica o bloco para o qual o jogador está a apontar.")]
@@ -35,14 +35,14 @@ public class BlockInteraction : MonoBehaviour
     private GameObject crossMeshHighlight;
 
 #if ENABLE_INPUT_SYSTEM
-    private UnityEngine.InputSystem.PlayerInput _playerInput;
+    private UnityEngine.InputSystem.PlayerInput playerInput;
 #endif
 
     private void Start()
     {
-        _input = GetComponent<StarterAssetsInputs>();
+        input = GetComponent<StarterAssetsInputs>();
 #if ENABLE_INPUT_SYSTEM
-        _playerInput = GetComponent<UnityEngine.InputSystem.PlayerInput>();
+        playerInput = GetComponent<UnityEngine.InputSystem.PlayerInput>();
 #endif
 
 
@@ -94,21 +94,21 @@ public class BlockInteraction : MonoBehaviour
     }
     private void DetectAction()
     {
-        bool isHoldingBreak = _input.breakBlock;
+        bool isHoldingBreak = input.breakBlock;
 
 #if ENABLE_INPUT_SYSTEM
 
-        if (_playerInput != null)
+        if (playerInput != null)
         {
-            isHoldingBreak = _playerInput.actions["BreakBlock"].IsPressed();
+            isHoldingBreak = playerInput.actions["BreakBlock"].IsPressed();
         }
 #endif
 
         UpdateMining(isHoldingBreak);
 
-        if (_input.placeBlock)
+        if (input.placeBlock)
         {
-            _input.placeBlock = false;
+            input.placeBlock = false;
             PlaceBlock();
         }
     }
@@ -155,14 +155,14 @@ public class BlockInteraction : MonoBehaviour
                     breakOverlay.SetActive(false);
                     if (crossMeshOverlay != null) crossMeshOverlay.SetActive(false);
 
-                    _input.breakBlock = false;
+                    input.breakBlock = false;
                     return;
                 }
             }
             else
             {
 
-                _input.breakBlock = false;
+                input.breakBlock = false;
                 return;
             }
         }
@@ -195,8 +195,8 @@ public class BlockInteraction : MonoBehaviour
 
     private void PickBlock()
     {
-        float scroll = _input.scroll;
-        _input.scroll = 0;
+        float scroll = input.scroll;
+        input.scroll = 0;
 
         if (scroll > 0) { currentIndex = (currentIndex + 1) % palette.Length; EventManager.OnBlockInHandChange(false); }
         if (scroll < 0) { currentIndex = (currentIndex - 1 + palette.Length) % palette.Length; EventManager.OnBlockInHandChange(true); }

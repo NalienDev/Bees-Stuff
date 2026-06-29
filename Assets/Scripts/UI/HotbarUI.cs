@@ -4,9 +4,9 @@ using UnityEngine;
 
 public class HotbarUI : MonoBehaviour
 {
-    [SerializeField] private GameObject _hotbar;
-    [SerializeField] private List<HotbarSlot> _slots;
-    private int _currentHighlightedIndex = 1;
+    [SerializeField] private GameObject hotbar;
+    [SerializeField] private List<HotbarSlot> slots;
+    private int currentHighlightedIndex = 1;
 
     private void Awake()
     {
@@ -20,8 +20,8 @@ public class HotbarUI : MonoBehaviour
 
     private void OnBlockInHandChange(bool isPositive)
     {
-        _slots[_currentHighlightedIndex].isActive = false;
-        _currentHighlightedIndex = ((_currentHighlightedIndex + (isPositive ? 1 : -1)) + _slots.Count) % _slots.Count;
-        _slots[_currentHighlightedIndex].isActive = true;
+        slots[currentHighlightedIndex].isActive = false;
+        currentHighlightedIndex = ((currentHighlightedIndex + (isPositive ? 1 : -1)) + slots.Count) % slots.Count;
+        slots[currentHighlightedIndex].isActive = true;
     }
 }

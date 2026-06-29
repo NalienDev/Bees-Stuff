@@ -29,7 +29,6 @@ public static class VegetationGenerator
                 float globalX = worldOffset.x * chunkSize + x + Config.seedOffsetX;
                 float globalZ = worldOffset.y * chunkSize + z + Config.seedOffsetZ;
 
-
                 float forestNoise = Mathf.PerlinNoise(
                     (globalX + 3713.5f) * TreeGenerator.treeNoiseScale,
                     (globalZ + 3713.5f) * TreeGenerator.treeNoiseScale);
@@ -45,11 +44,9 @@ public static class VegetationGenerator
                     flowerProb *= 5.0f;
                 }
 
-
                 float clumpNoise = Mathf.PerlinNoise(globalX * 0.2f, globalZ * 0.2f);
                 grassProb *= clumpNoise;
                 flowerProb *= clumpNoise;
-
 
                 float rand = PseudoRandom(Mathf.RoundToInt(globalX), Mathf.RoundToInt(globalZ));
 

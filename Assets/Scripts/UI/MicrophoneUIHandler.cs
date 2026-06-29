@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class MicrophoneUIHandler : MonoBehaviour
 {
-    [SerializeField] private GameObject _microphone;
+    [SerializeField] private GameObject microphone;
 
     private void Awake()
     {
@@ -12,7 +12,7 @@ public class MicrophoneUIHandler : MonoBehaviour
 
     private void Start()
     {
-        if (_microphone == null)
+        if (microphone == null)
         {
             Debug.Log("[MicrophoneUIHandler] Microphone GameObject not assigned in the inspector");
         }
@@ -26,11 +26,11 @@ public class MicrophoneUIHandler : MonoBehaviour
 
     private void OnWhistleDetected(Transform source)
     {
-        _microphone.SetActive(true);
+        microphone.SetActive(true);
     }
 
     private void OnWhistleStopped(Transform source)
     {
-        _microphone.SetActive(false);
+        microphone.SetActive(false);
     }
 }

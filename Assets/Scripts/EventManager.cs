@@ -3,7 +3,6 @@ using UnityEngine.Events;
 
 public static class EventManager
 {
-
     public static event UnityAction<bool> BlockInHandChange;
 
     public static void OnBlockInHandChange(bool isPositive)
